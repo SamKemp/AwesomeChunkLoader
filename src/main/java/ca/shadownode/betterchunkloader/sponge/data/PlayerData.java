@@ -1,124 +1,90 @@
 package ca.shadownode.betterchunkloader.sponge.data;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
+import java.sql.Timestamp;
 import java.util.UUID;
 
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlRootElement;
+
+
+@XmlRootElement
 public class PlayerData {
-    
-    private UUID playerUUID;
-    private Date lastActive;
-    private Map<UUID, List<ChunkLoader>> chunkLoaders;
-    private Integer allowedOfflineChunks;
-    private Integer allowedOnlineChunks;
 
-    public PlayerData(UUID playerUUID, Map<UUID, List<ChunkLoader>> chunkLoaders, Date lastActive) {
-        this.playerUUID = playerUUID;
-        this.lastActive = lastActive;
-        this.chunkLoaders = chunkLoaders;
-        /*Default max always on chunk count.*/
-        this.allowedOfflineChunks = 10;
-        /*Default max online only chunk count.*/
-        this.allowedOnlineChunks = 10;
+    private String name;
+    private UUID uuid;
+    private Timestamp lastOnline;
+    private Integer onlineChunksAmount;
+    private Integer offlineChunksAmount;
+
+    public PlayerData(String name, UUID uuid) {
+        this.name = name;
+        this.uuid = uuid;
+        this.lastOnline = new Timestamp(System.currentTimeMillis());
+        this.onlineChunksAmount = BetterChunkLoader.getInstance().getConfig().defaultOnlineChunks;
+        this.offlineChunksAmount = BetterChunkLoader.getInstance().getConfig().defaultOfflineChunks;
     }
 
-    public PlayerData(UUID playerUUID, Map<UUID, List<ChunkLoader>> chunkLoaders, Date lastActive, int allowedOfflineChunks, int allowedOnlineChunks) {
-        this.playerUUID = playerUUID;
-        this.lastActive = lastActive;
-        this.chunkLoaders = chunkLoaders;
-        this.allowedOfflineChunks = allowedOfflineChunks;
-        this.allowedOnlineChunks = allowedOnlineChunks;
-    }
-
-    /**
-     * Returns the players UUID.
-     * 
-     * @return UUID of player.
-     */
-    public UUID getPlayerUUID() {
-        return playerUUID;
-    }
-   
-    /**
-     * Returns the last time this player was active on the server.
-     * 
-     * @return Date last active.
-     */
-    public Date getLastActive() {
-        return this.lastActive;
-    }    
-    
-    /**
-     * Returns a map of all chunk loaders assigned to this player by world UUID.
-     *  
-     * @return Map containing UUID and List of ChunkLoader(s).
-     */
-    public Map<UUID, List<ChunkLoader>> getChunkLoaders() {
-        return chunkLoaders;
+    public PlayerData(String name, UUID uuid, Timestamp lastOnline, Integer onlineChunksAmount, Integer offlineChunksAmount) {
+        this.name = name;
+        this.uuid = uuid;
+        this.lastOnline = lastOnline;
+        this.onlineChunksAmount = onlineChunksAmount;
+        this.offlineChunksAmount = offlineChunksAmount;
     }
     
-    /**
-     * Returns the total amount of chunks a player can load while offline.
-     * 
-     * @return Integer of allowed offline chunks.
-     */
-    public Integer getAllowedOfflineChunks() {
-        return allowedOfflineChunks;
+    public String getName() {
+        return name;
     }
     
-    /**
-     * Returns the total amount of chunks a player can load while online.
-     * 
-     * @return Integer of allowed online chunks.
-     */
-    public Integer getAllowedOnlineChunks() {
-        return allowedOnlineChunks;
+    @XmlAttribute(name = "username")
+    public void setName(String username) {
+        this.name = username;
     }
 
-    
-    /**
-     * Sets the players UUID.
-     * 
-     * @param playerUUID UUID of the players.
-     */
-    public void setPlayerUUID(UUID playerUUID) {
-        this.playerUUID = playerUUID;
+    public UUID getUnqiueId() {
+        return uuid;
     }
 
-    /**
-     * Set the last time this player was active.
-     * 
-     * @param lastActive Date the player was last active.
-     */
-    public void setLastActive(Date lastActive) {
-        this.lastActive = lastActive;
+    @XmlAttribute(name = "uuid")
+    public void setUniqueId(UUID uuid) {
+        this.uuid = uuid;
     }
     
-    /**
-     * Sets a map of all chunk loaders owned by world UUID.
-     * 
-     * @param chunkLoaders Map of UUID and List of ChunkLoader(s).
-     */
-    public void setChunkLoaders(Map<UUID, List<ChunkLoader>> chunkLoaders) {
-        this.chunkLoaders = chunkLoaders;
+    public Timestamp getLastOnline() {
+        return lastOnline;
+    }
+    
+    @XmlAttribute(name = "lastOnline")
+    public void setLastOnline(Timestamp lastOnline) {
+        this.lastOnline = lastOnline;
+    }
+    
+    public int getOnlineChunksAmount() {
+        return onlineChunksAmount;
     }
 
-    /**
-     * Set the total amount of always on chunks that a player can load.
-     *
-     * @param allowedOfflineChunks Integer of the amount of allowed offline chunks.
-     */
-    public void setAllowedOfflineChunks(int allowedOfflineChunks) {
-        this.allowedOfflineChunks = allowedOfflineChunks;
+    @XmlAttribute(name = "onlineAmount")
+    public void setOnlineChunksAmount(Integer onlineChunksAmount) {
+        this.onlineChunksAmount = onlineChunksAmount;
+    }
+    
+    @XmlAttribute(name = "onlineAmount")
+    public void addOnlineChunksAmount(Integer onlineChunksAmount) {
+        this.onlineChunksAmount = this.onlineChunksAmount + onlineChunksAmount;
     }
 
-    /**
-     * Set the total amount of online only chunks that this player can load.
-     *
-     * @param allowedOnlineChunks Integer of the amount of allowed online chunks.
-     */
-    public void setAllowedOnlineChunks(int allowedOnlineChunks) {
-        this.allowedOnlineChunks = allowedOnlineChunks;
+    public int getOfflineChunksAmount() {
+        return offlineChunksAmount;
+    }
+
+    @XmlAttribute(name = "offlineAmount")
+    public void setOfflineChunksAmount(Integer offlineChunksAmount) {
+        this.offlineChunksAmount = offlineChunksAmount;
+    }
+    
+    @XmlAttribute(name = "offlineAmount")
+    public void addOfflineChunksAmount(Integer offlineChunksAmount) {
+        this.offlineChunksAmount = this.offlineChunksAmount + offlineChunksAmount;
     }
 }

@@ -35,11 +35,10 @@ minecraft {
     runDir = "run"
 }
 
-group = 'ca.shadownode.betterchunkloader.sponge'
+group = 'ca.shadownode.betterchunkloader'
 sponge.plugin.id = 'betterchunkloader'
 version = "1.0-SNAPSHOT"
 
 dependencies {
     compile "org.spongepowered:spongeforge:1.10.2-2123-5.1.0-BETA-1914:dev"
-    compile group: 'org.mongodb', name: 'mongo-java-driver', version: '3.4.0'
 }

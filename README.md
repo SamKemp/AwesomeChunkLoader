@@ -5,5 +5,10 @@ This project is a continuation of [BetterChunkLoader](https://github.com/KaiKiku
 ### What are the goals of this project? ###
 
 * Remove dependency on BCLForgeLib
-* Use a faster database solution: MongoDB
 * Improve the data model and commands.
+
+### TODO ###
+
+* Fix remove command
+* Add MongoDB datastore
+* Support migration between datastores.
