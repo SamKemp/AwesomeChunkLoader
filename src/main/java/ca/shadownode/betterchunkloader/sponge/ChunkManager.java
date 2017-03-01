@@ -2,7 +2,6 @@ package ca.shadownode.betterchunkloader.sponge;
 
 import ca.shadownode.betterchunkloader.sponge.data.ChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.events.ChunkLoadingCallback;
-import com.flowpowered.math.vector.Vector3i;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,9 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import net.minecraftforge.common.ForgeChunkManager;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.ChunkTicketManager;
 import org.spongepowered.api.world.ChunkTicketManager.LoadingTicket;
@@ -31,25 +28,6 @@ public class ChunkManager {
         ticketManager = Sponge.getServiceManager().provide(ChunkTicketManager.class);
         if (ticketManager.isPresent()) {
             ticketManager.get().registerCallback(plugin, new ChunkLoadingCallback(plugin));
-        }
-        forceConstraints();
-    }
-
-    private void forceConstraints() {
-        try {
-            boolean overridesEnabled = getField(ForgeChunkManager.class, "overridesEnabled").getBoolean(null);
-
-            if (!overridesEnabled) {
-                getField(ForgeChunkManager.class, "overridesEnabled").set(null, true);
-            }
-
-            Map<String, Integer> ticketConstraints = (Map<String, Integer>) getField(ForgeChunkManager.class, "ticketConstraints").get(null);
-            Map<String, Integer> chunkConstraints = (Map<String, Integer>) getField(ForgeChunkManager.class, "chunkConstraints").get(null);
-
-            ticketConstraints.put("betterchunkloader", Integer.MAX_VALUE);
-            chunkConstraints.put("betterchunkloader", Integer.MAX_VALUE);
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException ex) {
-            plugin.getLogger().error("Error forcing chunk constraints.", ex);
         }
     }
 

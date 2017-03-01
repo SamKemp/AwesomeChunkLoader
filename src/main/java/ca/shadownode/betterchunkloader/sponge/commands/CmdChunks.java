@@ -9,7 +9,6 @@ import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
-import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 
 public class CmdChunks implements CommandExecutor {
@@ -22,11 +21,11 @@ public class CmdChunks implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource sender, CommandContext commandContext) throws CommandException {
-
         if (!sender.hasPermission("betterchunkloader.chunks")) {
             sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdNoPermission));
             return CommandResult.empty();
         }
+        
         String chunksChangeOperatorElement = commandContext.<String>getOne("change").get();
         String loaderTypeElement = commandContext.<String>getOne("type").get();
         String playerName = commandContext.<String>getOne("player").get();

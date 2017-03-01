@@ -50,9 +50,7 @@ public final class ChunkLoader {
             put(2, 5);
             put(3, 7);
             put(4, 9);
-        }
-    ;
-
+        };
     };
 
     public ChunkLoader(UUID uuid, UUID world, UUID owner, Location<World> location, Vector3i chunk, Integer radius, Timestamp creation, boolean isAlwaysOn) {

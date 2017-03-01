@@ -23,7 +23,6 @@ public class CmdDelete implements CommandExecutor {
     
     @Override
     public CommandResult execute(CommandSource sender, CommandContext commandContext) throws CommandException {
-
         if (!sender.hasPermission("betterchunkloader.delete")) {
             sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdNoPermission));
             return CommandResult.empty();

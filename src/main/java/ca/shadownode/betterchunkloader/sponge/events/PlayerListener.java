@@ -22,8 +22,6 @@ import org.spongepowered.api.event.network.ClientConnectionEvent;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.InventoryProperty;
 import org.spongepowered.api.item.inventory.transaction.SlotTransaction;
-import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.format.TextColors;
 
 public class PlayerListener {
 
@@ -48,7 +46,7 @@ public class PlayerListener {
         clList.stream().filter((chunkLoader) -> (!chunkLoader.isAlwaysOn() && chunkLoader.isLoadable())).forEachOrdered((chunkLoader) -> {
             plugin.getChunkManager().loadChunkLoader(chunkLoader);
         });
-        plugin.getLogger().info("Loaded all online chunkloaders for Player: " + event.getTargetEntity().getName());
+        plugin.getLogger().info("Loaded all online chunkloaders for Player: " + player.getName());
     }
 
     @Listener
@@ -61,7 +59,7 @@ public class PlayerListener {
         clList.stream().filter((chunkLoader) -> (!chunkLoader.isAlwaysOn() && chunkLoader.isLoadable())).forEachOrdered((chunkLoader) -> {
             plugin.getChunkManager().unloadChunkLoader(chunkLoader);
         });
-        plugin.getLogger().info("Unloaded all online chunkloaders for Player: " + event.getTargetEntity().getName());
+        plugin.getLogger().info("Unloaded all online chunkloaders for Player: " + player.getName());
     }
 
     @Listener

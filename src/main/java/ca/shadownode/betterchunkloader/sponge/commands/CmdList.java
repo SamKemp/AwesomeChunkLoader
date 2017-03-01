@@ -16,7 +16,7 @@ public class CmdList implements CommandExecutor {
     }
     
     @Override
-    public CommandResult execute(CommandSource commandSource, CommandContext commandContext) throws CommandException {
+    public CommandResult execute(CommandSource sender, CommandContext commandContext) throws CommandException {
         /*
         int page = 1;
         if(commandContext.getOne("page").isPresent()){

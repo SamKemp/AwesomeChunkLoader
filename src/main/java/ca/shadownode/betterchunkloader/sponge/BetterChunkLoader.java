@@ -2,13 +2,13 @@ package ca.shadownode.betterchunkloader.sponge;
 
 import com.google.inject.Inject;
 import ca.shadownode.betterchunkloader.sponge.commands.CommandManager;
-import ca.shadownode.betterchunkloader.sponge.data.ChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.dataStore.DataStoreManager;
 import ca.shadownode.betterchunkloader.sponge.dataStore.IDataStore;
 import ca.shadownode.betterchunkloader.sponge.events.PlayerListener;
 import ca.shadownode.betterchunkloader.sponge.events.WorldListener;
 import java.io.File;
 import org.slf4j.Logger;
+import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
@@ -17,10 +17,7 @@ import org.spongepowered.api.plugin.Plugin;
 
 @Plugin(
         id = "betterchunkloader",
-        name = "BetterChunkLoader",
-        version = "1.0",
-        authors = "ShadowKitten",
-        description = "BetterChunKLoader for SpongeForge"
+        name = "BetterChunkLoader"
 )
 public class BetterChunkLoader {
 
@@ -34,8 +31,8 @@ public class BetterChunkLoader {
     private Logger logger;
 
     @Inject
-    @DefaultConfig(sharedRoot = false)
-    public File defaultConfig;
+    @ConfigDir(sharedRoot = false)
+    public File configDir;
 
     @Listener
     public void onServerStart(GameStartedServerEvent event) {
@@ -58,7 +55,7 @@ public class BetterChunkLoader {
                 getChunkManager().loadChunkLoader(chunkLoader);
                 return chunkLoader;
             }).map((_item) -> 1).reduce(count, Integer::sum);
-            getLogger().info("Loaded " + count + " offline chunk loaders.");
+            getLogger().info("Activated " + count + " offline chunk loaders.");
 
             getLogger().info("Registering Listeners...");
             new PlayerListener(this).register();

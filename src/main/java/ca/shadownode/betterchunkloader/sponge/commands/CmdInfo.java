@@ -19,16 +19,16 @@ public class CmdInfo implements CommandExecutor {
     }
 
     @Override
-    public CommandResult execute(CommandSource commandSource, CommandContext commandContext) throws CommandException {
-        if (!commandSource.hasPermission("betterchunkloader.info")) {
-            commandSource.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdNoPermission));
+    public CommandResult execute(CommandSource sender, CommandContext context) throws CommandException {
+        if (!sender.hasPermission("betterchunkloader.info")) {
+            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdNoPermission));
             return CommandResult.empty();
         }
 
         List<ChunkLoader> chunkLoaders = plugin.getDataStore().getChunkLoaders();
 
         if (chunkLoaders.isEmpty()) {
-            commandSource.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdInfoFailure));
+            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdInfoFailure));
             return CommandResult.success();
         }
 
@@ -61,7 +61,7 @@ public class CmdInfo implements CommandExecutor {
         }
         
         for(String message : plugin.getConfig().cmdInfoSuccess) {
-            commandSource.sendMessage(Utilities.parseMessage(message, new String[]{
+            sender.sendMessage(Utilities.parseMessage(message, new String[]{
                 String.valueOf(onlineOnlyLoaders),
                 String.valueOf(onlineOnlyChunks),
                 String.valueOf(alwaysOnLoaders),

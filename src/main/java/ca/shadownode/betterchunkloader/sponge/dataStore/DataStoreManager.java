@@ -26,10 +26,15 @@ public final class DataStoreManager {
         if (getDataStore() != null) {
             clearDataStores();
         }
-        registerDataStore("MYSQL", MySQLDataStore.class);
+        registerDataStore("H2", H2DataStore.class);
+        registerDataStore("MYSQL", MYSQLDataStore.class);
         switch (plugin.getConfig().selectedDataStore.toUpperCase()) {
             case "MYSQL":
                 setDataStoreInstance("MYSQL");
+                plugin.getLogger().info("Loading datastore: " + getDataStore().getName());
+                return getDataStore().load();
+            case "H2":
+                setDataStoreInstance("H2");
                 plugin.getLogger().info("Loading datastore: " + getDataStore().getName());
                 return getDataStore().load();
             default:

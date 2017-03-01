@@ -22,13 +22,13 @@ public class CmdBalance implements CommandExecutor {
     }
 
     @Override
-    public CommandResult execute(CommandSource sender, CommandContext commandContext) throws CommandException {
+    public CommandResult execute(CommandSource sender, CommandContext context) throws CommandException {
         if (!sender.hasPermission("betterchunkloader.balance")) {
             sender.sendMessage(Utilities.parseMessage(plugin.getConfig().cmdNoPermission));
             return CommandResult.empty();
         }
 
-        Optional<String> playerName = commandContext.getOne("player");
+        Optional<String> playerName = context.getOne("player");
         if (playerName.isPresent()) {
             Optional<User> user = Utilities.getOfflinePlayer(playerName.get());
             if (user.isPresent()) {

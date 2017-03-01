@@ -15,12 +15,12 @@ import org.spongepowered.api.service.sql.SqlService;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
-public class MySQLDataStore extends AHashMapDataStore {
+public class MYSQLDataStore extends AHashMapDataStore {
 
     private Optional<SqlService> sqlService;
     private final LocationSerializer locationSerializer;
 
-    public MySQLDataStore(BetterChunkLoader plugin) {
+    public MYSQLDataStore(BetterChunkLoader plugin) {
         super(plugin);
         this.locationSerializer = new LocationSerializer(plugin);
         sqlService = Sponge.getServiceManager().provide(SqlService.class);
@@ -57,7 +57,7 @@ public class MySQLDataStore extends AHashMapDataStore {
                     + "offlineAmount SMALLINT(6) UNSIGNED NOT NULL, "
                     + "UNIQUE KEY uuid (uuid));");
         } catch (SQLException ex) {
-            plugin.getLogger().error("Unable to create table bcl_chunkloaders", ex);
+            plugin.getLogger().error("Unable to create tables", ex);
             return false;
         }
         try (Connection connection = getConnection()) {

@@ -17,9 +17,9 @@ public class CmdBCL implements CommandExecutor {
     }
 
     @Override
-    public CommandResult execute(CommandSource commandSource, CommandContext commandContext) throws CommandException {
+    public CommandResult execute(CommandSource sender, CommandContext context) throws CommandException {
         plugin.getConfig().cmdRootUsage.forEach((message) -> {
-            commandSource.sendMessage(Utilities.parseMessage(message));
+            sender.sendMessage(Utilities.parseMessage(message));
         });
         return CommandResult.success();
     }

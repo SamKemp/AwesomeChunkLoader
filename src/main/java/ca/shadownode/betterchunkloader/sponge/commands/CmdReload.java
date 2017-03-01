@@ -18,17 +18,17 @@ public class CmdReload implements CommandExecutor {
     }
     
     @Override
-    public CommandResult execute(CommandSource commandSource, CommandContext commandContext) throws CommandException {
+    public CommandResult execute(CommandSource sender, CommandContext commandContext) throws CommandException {
 
-        if (!commandSource.hasPermission("betterchunkloader.reload")) {
-            commandSource.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdNoPermission));
+        if (!sender.hasPermission("betterchunkloader.reload")) {
+            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdNoPermission));
             return CommandResult.empty();
         }
 
         plugin.getConfig().loadConfig();
         plugin.getDataStoreManager().load();
         
-        commandSource.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdReloadSuccess));
+        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdReloadSuccess));
 
         return CommandResult.success();
     }

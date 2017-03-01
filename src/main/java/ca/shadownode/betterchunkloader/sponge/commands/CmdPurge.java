@@ -21,10 +21,10 @@ public class CmdPurge implements CommandExecutor {
     }
     
     @Override
-    public CommandResult execute(CommandSource commandSource, CommandContext commandContext) throws CommandException {
+    public CommandResult execute(CommandSource sender, CommandContext commandContext) throws CommandException {
 
-        if (!commandSource.hasPermission("betterchunkloader.purge")) {
-            commandSource.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdNoPermission));
+        if (!sender.hasPermission("betterchunkloader.purge")) {
+            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdNoPermission));
             return CommandResult.empty();
         }
 
@@ -33,7 +33,7 @@ public class CmdPurge implements CommandExecutor {
             plugin.getDataStore().removeChunkLoader(cl);
         });
 
-        commandSource.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdPurgeSuccess));
+        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdPurgeSuccess));
         return CommandResult.success();
     }
 }
