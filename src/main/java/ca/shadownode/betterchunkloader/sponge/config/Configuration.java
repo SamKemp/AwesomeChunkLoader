@@ -1,5 +1,6 @@
-package ca.shadownode.betterchunkloader.sponge;
+package ca.shadownode.betterchunkloader.sponge.config;
 
+import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
 import com.google.common.reflect.TypeToken;
 import java.io.File;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
@@ -11,7 +12,7 @@ import java.util.List;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 
-public final class BetterChunkLoaderConfig {
+public final class Configuration {
 
     private final BetterChunkLoader plugin;
     private final File configFile;
@@ -75,7 +76,7 @@ public final class BetterChunkLoaderConfig {
     public String cmdPurgeSuccess;
     public String cmdReloadSuccess;
 
-    public BetterChunkLoaderConfig(BetterChunkLoader plugin) {
+    public Configuration(BetterChunkLoader plugin) {
         this.plugin = plugin;
         this.configFile = new File(plugin.configDir, "config.conf");
         loadConfig();

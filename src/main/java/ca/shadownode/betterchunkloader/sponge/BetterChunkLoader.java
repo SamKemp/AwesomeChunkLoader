@@ -1,5 +1,6 @@
 package ca.shadownode.betterchunkloader.sponge;
 
+import ca.shadownode.betterchunkloader.sponge.config.Configuration;
 import com.google.inject.Inject;
 import ca.shadownode.betterchunkloader.sponge.commands.CommandManager;
 import ca.shadownode.betterchunkloader.sponge.dataStore.DataStoreManager;
@@ -9,21 +10,17 @@ import ca.shadownode.betterchunkloader.sponge.events.WorldListener;
 import java.io.File;
 import org.slf4j.Logger;
 import org.spongepowered.api.config.ConfigDir;
-import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.game.state.GameStoppedServerEvent;
 import org.spongepowered.api.plugin.Plugin;
 
-@Plugin(
-        id = "betterchunkloader",
-        name = "BetterChunkLoader"
-)
+@Plugin(id = "betterchunkloader")
 public class BetterChunkLoader {
 
     private static BetterChunkLoader plugin;
 
-    private BetterChunkLoaderConfig config;
+    private Configuration config;
     private DataStoreManager dataStoreManager;
     private ChunkManager chunkManager;
 
@@ -38,7 +35,7 @@ public class BetterChunkLoader {
     public void onServerStart(GameStartedServerEvent event) {
         plugin = this;
 
-        config = new BetterChunkLoaderConfig(this);
+        config = new Configuration(this);
         config.loadConfig();
 
         dataStoreManager = new DataStoreManager(this);
@@ -87,7 +84,7 @@ public class BetterChunkLoader {
         return dataStoreManager.getDataStore();
     }
 
-    public BetterChunkLoaderConfig getConfig() {
+    public Configuration getConfig() {
         return config;
     }
 

@@ -126,12 +126,6 @@ public class ChunkManager {
         return ticketManager;
     }
 
-    private Field getField(Class<?> targetClass, String fieldName) throws NoSuchFieldException, SecurityException {
-        Field field = targetClass.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return field;
-    }
-
     public List<Chunk> getChunks(Integer radius, Chunk chunk) {
         List<Chunk> chunks = new ArrayList<>(Arrays.asList());
         for (int x = -radius; x <= radius; x++) {
