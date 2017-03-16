@@ -4,6 +4,7 @@ import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.ChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.PlayerData;
 import ca.shadownode.betterchunkloader.sponge.utils.Utilities;
+import java.util.HashMap;
 import java.util.Optional;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
@@ -21,21 +22,21 @@ public class WorldListener {
     public WorldListener(BetterChunkLoader plugin) {
         this.plugin = plugin;
     }
-        
+
     public void register() {
         Sponge.getEventManager().registerListeners(plugin, this);
     }
 
     @Listener
     public void onWorldLoad(LoadWorldEvent event) {
-        plugin.getDataStore().getChunkLoaders(event.getTargetWorld().getUniqueId()).stream().filter((cl) -> (cl.isLoadable())).forEachOrdered((cl) -> {
-             plugin.getChunkManager().loadChunkLoader(cl);
+        plugin.getDataStore().getChunkLoaders(event.getTargetWorld()).stream().filter((cl) -> (cl.isLoadable())).forEachOrdered((cl) -> {
+            plugin.getChunkManager().loadChunkLoader(cl);
         });
     }
 
     @Listener
     public void onWorldUnLoad(UnloadWorldEvent event) {
-        plugin.getDataStore().getChunkLoaders(event.getTargetWorld().getUniqueId()).stream().filter((cl) -> (cl.isLoadable())).forEachOrdered((cl) -> {
+        plugin.getDataStore().getChunkLoaders(event.getTargetWorld()).stream().filter((cl) -> (cl.isLoadable())).forEachOrdered((cl) -> {
             plugin.getChunkManager().unloadChunkLoader(cl);
         });
     }
@@ -51,24 +52,33 @@ public class WorldListener {
         if (chunkLoader.isPresent()) {
 
             Player player = event.getCause().last(Player.class).get();
-            PlayerData playerData = plugin.getDataStore().getPlayerData(chunkLoader.get().getOwner());
-            if(chunkLoader.get().isAlwaysOn()) {
-                playerData.addOfflineChunksAmount(chunkLoader.get().getChunks());
-            }else{
-                playerData.addOnlineChunksAmount(chunkLoader.get().getChunks());
-            }
-            plugin.getDataStore().updatePlayerData(playerData);
-            plugin.getDataStore().removeChunkLoader(chunkLoader.get());
-            player.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().clBreakMessage));
+            Optional<PlayerData> playerData = plugin.getDataStore().getOrCreatePlayerData(chunkLoader.get().getOwner());
+            if (playerData.isPresent()) {
+                if (chunkLoader.get().isAlwaysOn()) {
+                    playerData.get().addAlwaysOnChunksAmount(chunkLoader.get().getChunks());
+                } else {
+                    playerData.get().addOnlineChunksAmount(chunkLoader.get().getChunks());
+                }
+                plugin.getDataStore().updatePlayerData(playerData.get());
+                plugin.getDataStore().removeChunkLoader(chunkLoader.get());
 
-            Optional<Player> owner = Sponge.getServer().getPlayer(chunkLoader.get().getOwner());
-            if (owner.isPresent() && player != owner.get()) {
-                owner.get().sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().clBreakOwnerNotify, new String[]{
-                    Utilities.getReadableLocation(chunkLoader.get().getLocation()),
-                    player.getName()
-                }));
+                HashMap<String, String> args = new HashMap<>();
+                args.put("player", player.getName());
+                args.put("playerUUID", player.getUniqueId().toString());
+                args.put("ownerName", playerData.get().getName());
+                args.put("owner", playerData.get().getUnqiueId().toString());
+                args.put("type", chunkLoader.get().isAlwaysOn() ? "Always On" : "Online Only");
+                args.put("location", Utilities.getReadableLocation(chunkLoader.get().getLocation()));
+                args.put("chunks", String.valueOf(chunkLoader.get().getChunks()));
+
+                player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.removed, args));
+
+                Optional<Player> owner = Sponge.getServer().getPlayer(chunkLoader.get().getOwner());
+                if (owner.isPresent() && player != owner.get()) {
+                    player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.ownerNotify, args));
+                }
+                plugin.getLogger().info(player.getName() + " broke " + owner.get().getName() + "'s chunk loader at " + Utilities.getReadableLocation(chunkLoader.get().getLocation()));
             }
-            plugin.getLogger().info(player.getName() + " broke " + owner.get().getName() + "'s chunk loader at " + Utilities.getReadableLocation(chunkLoader.get().getLocation()));
         }
     }
 

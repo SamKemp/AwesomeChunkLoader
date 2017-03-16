@@ -20,19 +20,14 @@ public class CmdInfo implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource sender, CommandContext context) throws CommandException {
-        if (!sender.hasPermission("betterchunkloader.info")) {
-            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdNoPermission));
-            return CommandResult.empty();
-        }
-
         List<ChunkLoader> chunkLoaders = plugin.getDataStore().getChunkLoaders();
 
         if (chunkLoaders.isEmpty()) {
-            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdInfoFailure));
+            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.info.failure));
             return CommandResult.success();
         }
 
-        Integer alwaysOnLoaders = 0, onlineOnlyLoaders = 0, alwaysOnChunks = 0, onlineOnlyChunks = 0, maxChunksCount = 0, players = 0;
+        Integer alwaysOnLoaders = 0, onlineOnlyLoaders = 0, alwaysOnChunks = 0, onlineOnlyChunks = 0, maxChunksCount = 0, playerCount = 0;
         HashMap<UUID, Integer> loadedChunksForPlayer = new HashMap<>();
 
         for (ChunkLoader chunkLoader : chunkLoaders) {
@@ -52,24 +47,27 @@ public class CmdInfo implements CommandExecutor {
             loadedChunksForPlayer.put(chunkLoader.getOwner(), count);
         }
 
-        players = loadedChunksForPlayer.size();
+        playerCount = loadedChunksForPlayer.size();
 
         for (Map.Entry<UUID, Integer> entry : loadedChunksForPlayer.entrySet()) {
             if (maxChunksCount < entry.getValue()) {
                 maxChunksCount = entry.getValue();
             }
         }
-        
-        for(String message : plugin.getConfig().cmdInfoSuccess) {
-            sender.sendMessage(Utilities.parseMessage(message, new String[]{
-                String.valueOf(onlineOnlyLoaders),
-                String.valueOf(onlineOnlyChunks),
-                String.valueOf(alwaysOnLoaders),
-                String.valueOf(alwaysOnChunks),
-                String.valueOf(players)
-            }));
-        }
-        
+
+        HashMap<String, String> args = new HashMap<>();
+        args.put("onlineLoaders", String.valueOf(onlineOnlyLoaders));
+        args.put("onlineChunks", String.valueOf(onlineOnlyChunks));
+        args.put("alwaysOnLoaders", String.valueOf(alwaysOnLoaders));
+        args.put("alwaysOnChunks", String.valueOf(alwaysOnChunks));
+        args.put("playerCount", String.valueOf(playerCount));
+
+        plugin.getPaginationService().builder()
+                .contents(Utilities.parseMessageList(plugin.getConfig().getMessages().commands.info.success.items, args))
+                .title(Utilities.parseMessage(plugin.getConfig().getMessages().commands.info.success.title))
+                .padding(Utilities.parseMessage(plugin.getConfig().getMessages().commands.info.success.padding))
+                .sendTo(sender);
+
         return CommandResult.success();
     }
 }

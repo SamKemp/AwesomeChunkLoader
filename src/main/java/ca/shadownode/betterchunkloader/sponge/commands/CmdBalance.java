@@ -3,6 +3,7 @@ package ca.shadownode.betterchunkloader.sponge.commands;
 import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.PlayerData;
 import ca.shadownode.betterchunkloader.sponge.utils.Utilities;
+import java.util.HashMap;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -11,7 +12,6 @@ import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 
 import java.util.Optional;
-import org.spongepowered.api.entity.living.player.User;
 
 public class CmdBalance implements CommandExecutor {
 
@@ -23,37 +23,38 @@ public class CmdBalance implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource sender, CommandContext context) throws CommandException {
-        if (!sender.hasPermission("betterchunkloader.balance")) {
-            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().cmdNoPermission));
-            return CommandResult.empty();
-        }
-
         Optional<String> playerName = context.getOne("player");
         if (playerName.isPresent()) {
-            Optional<User> user = Utilities.getOfflinePlayer(playerName.get());
-            if (user.isPresent()) {
-                chunksInfo(sender, user.get());
+            if (chunksInfo(sender, playerName.get())) {
                 return CommandResult.success();
             } else {
-                sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdPlayerNotExists));
+                sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.noPlayerExists));
             }
         } else {
             if (sender instanceof Player) {
-                chunksInfo(sender, (Player)sender);
+                chunksInfo(sender, sender.getName());
                 return CommandResult.success();
             }
         }
-
+        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.balance.failure));
         return CommandResult.empty();
     }
 
-    private void chunksInfo(CommandSource sender, User user) {
-        PlayerData playerData = plugin.getDataStore().getPlayerData(user.getUniqueId());
-        int online = playerData.getOnlineChunksAmount();
-        int offline = playerData.getOfflineChunksAmount();
-
-        plugin.getConfig().cmdBalanceSuccess.forEach((message) -> {
-            sender.sendMessage(Utilities.parseMessage(message, new String[]{user.getName(), String.valueOf(online), String.valueOf(offline)}));
-        });
+    private boolean chunksInfo(CommandSource sender, String playerName) {
+        Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(playerName);
+        HashMap<String, String> args = new HashMap();
+        if (playerData.isPresent()) {
+            args.put("username", playerData.get().getName());
+            args.put("uuid", playerData.get().getUnqiueId().toString());
+            args.put("online", String.valueOf(playerData.get().getOnlineChunksAmount()));
+            args.put("alwayson", String.valueOf(playerData.get().getAlwaysOnChunksAmount()));
+            plugin.getPaginationService().builder()
+                    .contents(Utilities.parseMessageList(plugin.getConfig().getMessages().commands.balance.success.items, args))
+                    .title(Utilities.parseMessage(plugin.getConfig().getMessages().commands.balance.success.title))
+                    .padding(Utilities.parseMessage(plugin.getConfig().getMessages().commands.balance.success.padding))
+                    .sendTo(sender);
+            return true;
+        }
+        return false;
     }
 }

@@ -54,8 +54,11 @@ public class MYSQLDataStore extends AHashMapDataStore {
                     + "uuid VARCHAR(36) NOT NULL, "
                     + "lastOnline TIMESTAMP NOT NULL, "
                     + "onlineAmount SMALLINT(6) UNSIGNED NOT NULL, "
-                    + "offlineAmount SMALLINT(6) UNSIGNED NOT NULL, "
+                    + "alwaysOnAmount SMALLINT(6) UNSIGNED NOT NULL, "
                     + "UNIQUE KEY uuid (uuid));");
+            if (tableExists("bcl_playerdata")) {
+                connection.createStatement().execute("ALTER IGNORE TABLE `bcl_playerdata` CHANGE `offlineAmount` `alwaysOnAmount` SMALLINT(6);");
+            }
         } catch (SQLException ex) {
             plugin.getLogger().error("Unable to create tables", ex);
             return false;
@@ -96,7 +99,7 @@ public class MYSQLDataStore extends AHashMapDataStore {
                         UUID.fromString(rs.getString("uuid")),
                         rs.getTimestamp("lastOnline"),
                         rs.getInt("onlineAmount"),
-                        rs.getInt("offlineAmount")
+                        rs.getInt("alwaysOnAmount")
                 );
                 this.playersData.put(playerData.getUnqiueId(), playerData);
             }
@@ -110,7 +113,7 @@ public class MYSQLDataStore extends AHashMapDataStore {
     @Override
     public Optional<ChunkLoader> getChunkLoaderAt(Location<World> blockLocation) {
         List<ChunkLoader> chunkloaders = this.chunkLoaders.get(blockLocation.getExtent().getUniqueId());
-        if (chunkLoaders == null || chunkLoaders.isEmpty()) {
+        if (chunkloaders == null || chunkloaders.isEmpty()) {
             return Optional.empty();
         }
         for (ChunkLoader chunkLoader : chunkloaders) {
@@ -155,8 +158,8 @@ public class MYSQLDataStore extends AHashMapDataStore {
     }
 
     @Override
-    public void removeChunkLoaders(UUID playerUUID) {
-        super.removeChunkLoaders(playerUUID);
+    public void removeAllChunkLoaders(UUID playerUUID) {
+        super.removeAllChunkLoaders(playerUUID);
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE owner = '" + playerUUID.toString() + "'");
         } catch (SQLException ex) {
@@ -165,8 +168,18 @@ public class MYSQLDataStore extends AHashMapDataStore {
     }
 
     @Override
-    public void changeChunkLoaderRadius(ChunkLoader chunkLoader, Integer radius) {
-        super.changeChunkLoaderRadius(chunkLoader, radius);
+    public void removeAllChunkLoaders(World world) {
+        super.removeAllChunkLoaders(world);
+        try (Connection connection = getConnection()) {
+            connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE owner = '" + world.getUniqueId().toString() + "'");
+        } catch (SQLException ex) {
+            plugin.getLogger().error("MYSQL: Error removing ChunkLoaders.", ex);
+        }
+    }
+
+    @Override
+    public void setChunkLoaderRadius(ChunkLoader chunkLoader, Integer radius) {
+        super.setChunkLoaderRadius(chunkLoader, radius);
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("UPDATE bcl_chunkloaders SET r = " + radius + " WHERE uuid = '" + chunkLoader.getUniqueId() + "' LIMIT 1");
         } catch (SQLException ex) {
@@ -182,7 +195,7 @@ public class MYSQLDataStore extends AHashMapDataStore {
             statement.setString(2, playerData.getUnqiueId().toString());
             statement.setTimestamp(3, playerData.getLastOnline());
             statement.setInt(4, playerData.getOnlineChunksAmount());
-            statement.setInt(5, playerData.getOfflineChunksAmount());
+            statement.setInt(5, playerData.getAlwaysOnChunksAmount());
             statement.executeUpdate();
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error adding ChunkLoader.", ex);
@@ -194,26 +207,38 @@ public class MYSQLDataStore extends AHashMapDataStore {
         try (Connection connection = getConnection()) {
             ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_playerdata WHERE uuid = '" + uuid.toString() + "' LIMIT 1");
             while (rs.next()) {
-                PlayerData playerData = this.getPlayerData(uuid);
-                playerData.setName(rs.getString("username"));
-                playerData.setUniqueId(UUID.fromString(rs.getString("uuid")));
-                playerData.setLastOnline(rs.getTimestamp("lastOnline"));
-                playerData.setOnlineChunksAmount(rs.getInt("onlineAmount"));
-                playerData.setOfflineChunksAmount(rs.getInt("offlineAmount"));
+                Optional<PlayerData> playerData = this.getOrCreatePlayerData(uuid);
+                if (playerData.isPresent()) {
+                    playerData.get().setName(rs.getString("username"));
+                    playerData.get().setUniqueId(UUID.fromString(rs.getString("uuid")));
+                    playerData.get().setLastOnline(rs.getTimestamp("lastOnline"));
+                    playerData.get().setOnlineChunksAmount(rs.getInt("onlineAmount"));
+                    playerData.get().setAlwaysOnChunksAmount(rs.getInt("alwaysOnAmount"));
+                }
             }
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error refreshing Player data.", ex);
         }
     }
 
+    public Boolean tableExists(String tableName) {
+        try (Connection connection = getConnection()) {
+            ResultSet rs = connection.getMetaData().getTables(null, null, tableName, null);
+            return rs.next();
+        } catch (SQLException ex) {
+            plugin.getLogger().error("MYSQL: Error checking if table exists.", ex);
+            return false;
+        }
+    }
+
     public Connection getConnection() throws SQLException {
         return sqlService.get().getDataSource(
                 "jdbc:mariadb://"
-                + plugin.getConfig().mysqlHost
-                + ":" + plugin.getConfig().mysqlPort
-                + "/" + plugin.getConfig().mysqlDatabase
-                + "?user=" + plugin.getConfig().mysqlUsername
-                + "&password=" + plugin.getConfig().mysqlPassword
+                + plugin.getConfig().getCore().dataStore.mysql.hostname
+                + ":" + plugin.getConfig().getCore().dataStore.mysql.port
+                + "/" + plugin.getConfig().getCore().dataStore.mysql.database
+                + "?user=" + plugin.getConfig().getCore().dataStore.mysql.username
+                + "&password=" + plugin.getConfig().getCore().dataStore.mysql.password
         ).getConnection();
     }
 }

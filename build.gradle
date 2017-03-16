@@ -1,13 +1,36 @@
+buildscript {
+    repositories {
+        maven {
+            name = "forge"
+            url = "http://files.minecraftforge.net/maven"
+        }
+        maven {
+            name = 'sponge'
+            url = 'http://repo.spongepowered.org/maven'
+        }    
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.2-SNAPSHOT'
+    }
+}
+
 plugins {
     id 'org.spongepowered.plugin' version '0.8.1'
     id 'maven'
 }
+
+apply plugin: 'net.minecraftforge.gradle.forge'
 
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
 group = 'ca.shadownode.betterchunkloader'
 version = '2.0-SNAPSHOT'
+
+minecraft {
+    forgeVersion = "1.10.2-12.18.3.2221"
+    mappings = "snapshot_20160628"
+}
 
 sponge {
     plugin {
@@ -26,24 +49,17 @@ repositories {
         name = 'lucko'
         url = 'https://repo.lucko.me/'
     }
+    maven {
+        name = "forge"
+        url = "http://files.minecraftforge.net/maven"
+    }
+    maven {
+        name = 'sponge'
+        url = 'http://repo.spongepowered.org/maven'
+    }
 }
 
 dependencies {
-    compile 'org.spongepowered:spongeapi:5.1.0'
+    compile 'org.spongepowered:spongeforge:1.10.2-2254-5.2.0-BETA-2231'
     compile "me.lucko.luckperms:luckperms-api:2.15"
-}
-
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            repository(
-                url: "${nexusUrl}/repository/releases") {
-                authentication(userName: nexusUsername, password: nexusPassword)
-            }
-            snapshotRepository(
-                url: "${nexusUrl}/repository/snapshots") {
-                authentication(userName: nexusUsername, password: nexusPassword)
-            }
-        }
-    }
 }

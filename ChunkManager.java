@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import net.minecraftforge.common.ForgeChunkManager;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.ChunkTicketManager;
@@ -26,22 +25,6 @@ public class ChunkManager {
 
     public ChunkManager(BetterChunkLoader plugin) {
         this.plugin = plugin;
-        try {
-            boolean overridesEnabled = getField(ForgeChunkManager.class, "overridesEnabled").getBoolean(null);
-
-            if (!overridesEnabled) {
-                getField(ForgeChunkManager.class, "overridesEnabled").set(null, true);
-            }
-
-            Map<String, Integer> ticketConstraints = (Map<String, Integer>) getField(ForgeChunkManager.class, "ticketConstraints").get(null);
-            Map<String, Integer> chunkConstraints = (Map<String, Integer>) getField(ForgeChunkManager.class, "chunkConstraints").get(null);
-
-            ticketConstraints.put("betterchunkloader", Integer.MAX_VALUE);
-            chunkConstraints.put("betterchunkloader", Integer.MAX_VALUE);
-            
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException ex) {
-            plugin.getLogger().debug("ChunkManager failed to force chunk constraints", ex);
-        }
         ticketManager = Sponge.getServiceManager().provide(ChunkTicketManager.class);
         if (ticketManager.isPresent()) {
             ticketManager.get().registerCallback(plugin, new ChunkLoadingCallback(plugin));
@@ -57,8 +40,7 @@ public class ChunkManager {
         if (!mainChunk.isPresent()) {
             return false;
         }
-        List<Chunk> chunks = getChunks(chunkLoader.getRadius(), mainChunk.get());
-        chunks.forEach((chunk) -> {
+        getChunks(chunkLoader.getRadius(), mainChunk.get()).forEach((chunk) -> {
             loadChunk(world.get(), chunk);
         });
         return true;
@@ -73,9 +55,8 @@ public class ChunkManager {
         if (!mainChunk.isPresent()) {
             return false;
         }
-        List<Chunk> chunks = getChunks(chunkLoader.getRadius(), mainChunk.get());
-        chunks.forEach((chunk) -> {
-            List<ChunkLoader> clList = plugin.getDataStore().getChunkLoadersAt(world.get(), chunk.getPosition());
+        getChunks(chunkLoader.getRadius(), mainChunk.get()).forEach((chunk) -> {
+            List<ChunkLoader> clList = plugin.getDataStore().getChunkLoadersAt(chunkLoader.getWorld(), chunk.getPosition());
             if (clList.isEmpty()) {
                 unloadChunk(world.get(), chunk);
             }
@@ -102,7 +83,7 @@ public class ChunkManager {
             ticket = ticketManager.get().createTicket(plugin, world);
             tickets.put(world.getUniqueId(), ticket);
         }
-        if (ticket.isPresent() && chunk != null) {
+        if (ticket.isPresent()) {
             ticket.get().forceChunk(chunk.getPosition());
             return true;
         }
@@ -123,7 +104,7 @@ public class ChunkManager {
         Optional<LoadingTicket> ticket;
         if (tickets.containsKey(world.getUniqueId()) && tickets.get(world.getUniqueId()).isPresent()) {
             ticket = tickets.get(world.getUniqueId());
-            if (ticket.isPresent() && chunk != null) {
+            if (ticket.isPresent()) {
                 ticket.get().unforceChunk(chunk.getPosition());
                 return true;
             }
@@ -156,11 +137,5 @@ public class ChunkManager {
             }
         }
         return chunks;
-    }
-
-    private Field getField(Class<?> targetClass, String fieldName) throws NoSuchFieldException, SecurityException {
-        Field field = targetClass.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return field;
     }
 }

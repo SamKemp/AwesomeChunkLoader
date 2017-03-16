@@ -3,13 +3,14 @@ package ca.shadownode.betterchunkloader.sponge.commands;
 import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.PlayerData;
 import ca.shadownode.betterchunkloader.sponge.utils.Utilities;
+import java.util.HashMap;
 import java.util.Optional;
+import java.util.UUID;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
-import org.spongepowered.api.entity.living.player.User;
 
 public class CmdChunks implements CommandExecutor {
 
@@ -21,77 +22,94 @@ public class CmdChunks implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource sender, CommandContext commandContext) throws CommandException {
-        if (!sender.hasPermission("betterchunkloader.chunks")) {
-            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdNoPermission));
-            return CommandResult.empty();
-        }
-        
         String chunksChangeOperatorElement = commandContext.<String>getOne("change").get();
         String loaderTypeElement = commandContext.<String>getOne("type").get();
         String playerName = commandContext.<String>getOne("player").get();
         Integer changeValue = commandContext.<Integer>getOne("value").get();
 
-        Optional<User> user = Utilities.getOfflinePlayer(playerName);
-        if (!user.isPresent()) {
-            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().cmdPlayerNotExists));
+        Optional<UUID> playerUUID = Utilities.getPlayerUUID(playerName);
+        if (!playerUUID.isPresent()) {
+            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.noPlayerExists));
             return CommandResult.empty();
         }
-        PlayerData playerData = plugin.getDataStore().getPlayerData(user.get().getUniqueId());
+        Optional<PlayerData> playerData = plugin.getDataStore().getOrCreatePlayerData(playerUUID.get());
+        if (!playerData.isPresent()) {
+            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.noPlayerExists));
+            return CommandResult.empty();
+        }
+
+        HashMap<String, String> args = new HashMap<String, String>() {{
+            put("target", playerData.get().getName());
+            put("targetUUID", playerData.get().getUnqiueId().toString());
+            put("online", String.valueOf(playerData.get().getOnlineChunksAmount()));
+            put("alwayson", String.valueOf(playerData.get().getAlwaysOnChunksAmount()));
+            put("maxOnline", String.valueOf(plugin.getConfig().getCore().chunkLoader.maxOnline));
+            put("maxAlwaysOn", String.valueOf(plugin.getConfig().getCore().chunkLoader.maxAlwaysOn));
+            put("change", String.valueOf(changeValue));
+        }};
         switch (chunksChangeOperatorElement) {
             case "add": {
                 switch (loaderTypeElement) {
-                    case "offline": {
-                        if (playerData.getOfflineChunksAmount() + changeValue > plugin.getConfig().maxOfflineChunks) {
-                            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdChunksAddFailure, new String[]{String.valueOf(changeValue), "offline", user.get().getName(), String.valueOf(plugin.getConfig().maxOfflineChunks)}));
+                    case "alwayson": {
+                        args.put("type", "Always On");
+                        args.put("limit", String.valueOf(plugin.getConfig().getCore().chunkLoader.maxAlwaysOn));
+                        if (playerData.get().getAlwaysOnChunksAmount() + changeValue > plugin.getConfig().getCore().chunkLoader.maxAlwaysOn) {
+                            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.chunks.add.failure, args));
                             return CommandResult.empty();
                         }
-                        playerData.addOfflineChunksAmount(changeValue);
-                        plugin.getDataStore().updatePlayerData(playerData);
-                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdChunksAddSuccess, new String[]{String.valueOf(changeValue), "offline", user.get().getName()}));
+                        playerData.get().addAlwaysOnChunksAmount(changeValue);
+                        plugin.getDataStore().updatePlayerData(playerData.get());
+                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.chunks.add.success, args));
                         return CommandResult.success();
                     }
                     case "online": {
-                        if (playerData.getOnlineChunksAmount() + changeValue > plugin.getConfig().maxOnlineChunks) {
-                            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdChunksAddFailure, new String[]{String.valueOf(changeValue), "online", user.get().getName(), String.valueOf(plugin.getConfig().maxOnlineChunks)}));
+                        args.put("type", "Online Only");
+                        args.put("limit", String.valueOf(plugin.getConfig().getCore().chunkLoader.maxOnline));
+                        if (playerData.get().getOnlineChunksAmount() + changeValue > plugin.getConfig().getCore().chunkLoader.maxOnline) {
+                            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.chunks.add.failure, args));
                             return CommandResult.empty();
                         }
-                        playerData.addOfflineChunksAmount(changeValue);
-                        plugin.getDataStore().updatePlayerData(playerData);
-                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdChunksAddSuccess, new String[]{String.valueOf(changeValue), "online", user.get().getName()}));
+                        playerData.get().addOnlineChunksAmount(changeValue);
+                        plugin.getDataStore().updatePlayerData(playerData.get());
+                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.chunks.add.success, args));
                         return CommandResult.success();
                     }
                     default: {
-                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdChunksUsage));
+                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.chunks.usage, args));
                         return CommandResult.empty();
                     }
                 }
             }
             case "set": {
                 if (changeValue < 0) {
-                    sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdChunksSetFailure));
+                    sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.chunks.set.failure, args));
                     return CommandResult.empty();
                 }
                 switch (loaderTypeElement) {
-                    case "offline": {
-                        playerData.setOfflineChunksAmount(changeValue);
-                        plugin.getDataStore().updatePlayerData(playerData);
-                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdChunksSetSuccess, new String[]{user.get().getName(), "offline", String.valueOf(changeValue)}));
+                    case "alwayson": {
+                        args.put("type", "Always On");
+                        args.put("limit", String.valueOf(plugin.getConfig().getCore().chunkLoader.maxAlwaysOn));
+                        playerData.get().setAlwaysOnChunksAmount(changeValue);
+                        plugin.getDataStore().updatePlayerData(playerData.get());
+                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.chunks.set.success, args));
                         return CommandResult.success();
                     }
                     case "online": {
-                        playerData.setOnlineChunksAmount(changeValue);
-                        plugin.getDataStore().updatePlayerData(playerData);
-                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdChunksSetSuccess, new String[]{user.get().getName(), "online", String.valueOf(changeValue)}));
+                        args.put("type", "Online Only");
+                        args.put("limit", String.valueOf(plugin.getConfig().getCore().chunkLoader.maxOnline));
+                        playerData.get().setOnlineChunksAmount(changeValue);
+                        plugin.getDataStore().updatePlayerData(playerData.get());
+                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.chunks.set.success, args));
                         return CommandResult.success();
                     }
                     default: {
-                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdChunksUsage));
+                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.chunks.usage, args));
                         return CommandResult.empty();
                     }
                 }
             }
             default: {
-                sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdChunksUsage));
+                sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.chunks.usage, args));
                 return CommandResult.empty();
             }
         }

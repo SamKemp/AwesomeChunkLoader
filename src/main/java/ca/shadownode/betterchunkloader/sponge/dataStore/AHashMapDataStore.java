@@ -52,9 +52,18 @@ public abstract class AHashMapDataStore implements IDataStore {
         }
         return list;
     }
-    
+
     @Override
-    public List<ChunkLoader> getChunkLoaders(UUID ownerUUID) {
+    public List<ChunkLoader> getChunkLoadersByType(Boolean isAlwaysOn) {
+        List<ChunkLoader> chunkloaders = new ArrayList<>();
+        getChunkLoaders().stream().filter((cl) -> (cl.isAlwaysOn().equals(isAlwaysOn))).forEachOrdered((cl) -> {
+            chunkloaders.add(cl);
+        });
+        return chunkloaders;
+    }
+
+    @Override
+    public List<ChunkLoader> getChunkLoadersByOwner(UUID ownerUUID) {
         List<ChunkLoader> chunkloaders = new ArrayList<>();
         getChunkLoaders().stream().filter((cl) -> (cl.getOwner().equals(ownerUUID))).forEachOrdered((cl) -> {
             chunkloaders.add(cl);
@@ -63,9 +72,9 @@ public abstract class AHashMapDataStore implements IDataStore {
     }
 
     @Override
-    public List<ChunkLoader> getChunkLoadersAt(UUID worldUUID, Vector3i chunk) {
+    public List<ChunkLoader> getChunkLoadersAt(World world, Vector3i chunk) {
         List<ChunkLoader> chunkloaders = new ArrayList<>();
-        this.getChunkLoaders(worldUUID).stream().filter((cl) -> (cl.getChunk().getX() == chunk.getX() && cl.getChunk().getZ() == chunk.getZ())).forEachOrdered((cl) -> {
+        getChunkLoaders(world).stream().filter((cl) -> (cl.getChunk().getX() == chunk.getX() && cl.getChunk().getZ() == chunk.getZ())).forEachOrdered((cl) -> {
             chunkloaders.add(cl);
         });
         return chunkloaders;
@@ -73,7 +82,7 @@ public abstract class AHashMapDataStore implements IDataStore {
 
     @Override
     public Optional<ChunkLoader> getChunkLoaderAt(Location<World> blockLocation) {
-        for (ChunkLoader cl : this.getChunkLoaders(blockLocation.getExtent().getUniqueId())) {
+        for (ChunkLoader cl : this.getChunkLoaders(blockLocation.getExtent())) {
             if (cl.getLocation().equals(blockLocation)) {
                 return Optional.of(cl);
             }
@@ -116,36 +125,89 @@ public abstract class AHashMapDataStore implements IDataStore {
     }
 
     @Override
-    public void removeChunkLoaders(UUID ownerId) {
-        List<ChunkLoader> clList = this.getChunkLoaders(ownerId);
+    public void removeAllChunkLoaders(UUID owner) {
+        List<ChunkLoader> clList = this.getChunkLoaders();
         clList.forEach((cl) -> {
-            this.getChunkLoaders(cl.getWorld()).remove(cl);
+            if (cl.getOwner().equals(owner)) {
+                this.chunkLoaders.get(cl.getWorld()).remove(cl);
+            }
         });
     }
 
     @Override
-    public void changeChunkLoaderRadius(ChunkLoader chunkLoader, Integer range) {
+    public void removeAllChunkLoaders(World world) {
+        List<ChunkLoader> clList = this.chunkLoaders.get(world.getUniqueId());
+        clList.forEach((cl) -> {
+            this.chunkLoaders.get(world.getUniqueId()).remove(cl);
+        });
+    }
+
+    @Override
+    public void setChunkLoaderRadius(ChunkLoader chunkLoader, Integer radius) {
         if (chunkLoader.isLoadable()) {
             removeChunkLoader(chunkLoader);
         }
-        chunkLoader.setRadius(range);
+        chunkLoader.setRadius(radius);
         if (chunkLoader.isLoadable()) {
             addChunkLoader(chunkLoader);
         }
     }
 
     @Override
-    public PlayerData getPlayerData(UUID playerUUID) {
-        PlayerData playerData = this.playersData.get(playerUUID);
-        if (playerData == null) {
-            playerData = new PlayerData(Utilities.getOfflinePlayer(playerUUID).get().getName(), playerUUID);
-            this.playersData.put(playerUUID, playerData);
+    public Optional<PlayerData> getOrCreatePlayerData(UUID playerUUID) {
+        if (this.playersData.containsKey(playerUUID)) {
+            return Optional.of(this.playersData.get(playerUUID));
         }
-        return playerData;
+        Optional<String> playerName = Utilities.getPlayerName(playerUUID);
+        if (playerName.isPresent()) {
+            PlayerData playerData = new PlayerData(playerName.get(), playerUUID);
+            this.playersData.put(playerUUID, playerData);
+            return Optional.of(playerData);
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<PlayerData> getOrCreatePlayerData(String playerName) {
+        Optional<UUID> playerUUID = Utilities.getPlayerUUID(playerName);
+        if (playerUUID.isPresent()) {
+            if (this.playersData.containsKey(playerUUID.get())) {
+                return Optional.of(this.playersData.get(playerUUID.get()));
+            }
+            PlayerData playerData = new PlayerData(playerName, playerUUID.get());
+            this.playersData.put(playerUUID.get(), playerData);
+            return Optional.of(playerData);
+
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<PlayerData> getPlayerData(UUID playerUUID) {
+        if (this.playersData.containsKey(playerUUID)) {
+            return Optional.of(this.playersData.get(playerUUID));
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<PlayerData> getPlayerData(String playerName) {
+        Optional<UUID> playerUUID = Utilities.getPlayerUUID(playerName);
+        if (playerUUID.isPresent()) {
+            if (this.playersData.containsKey(playerUUID.get())) {
+                return Optional.of(this.playersData.get(playerUUID.get()));
+            }
+        }
+        return Optional.empty();
     }
 
     @Override
     public List<PlayerData> getPlayersData() {
         return new ArrayList<>(this.playersData.values());
+    }
+
+    @Override
+    public Boolean playerDataExists(UUID playerUUID) {
+        return this.playersData.containsKey(playerUUID);
     }
 }

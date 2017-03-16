@@ -12,9 +12,9 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LoaderTypeElement extends CommandElement {
+public class ReloadTypeElement extends CommandElement {
 
-    public LoaderTypeElement(Text key) {
+    public ReloadTypeElement(Text key) {
         super(key);
     }
 
@@ -22,10 +22,13 @@ public class LoaderTypeElement extends CommandElement {
     @Override
     protected Object parseValue(CommandSource commandSource, CommandArgs commandArgs) throws ArgumentParseException {
         String arg = commandArgs.next();
-        if (arg.equalsIgnoreCase("online")) {
+        if (arg.equalsIgnoreCase("core")) {
             return arg;
         }
-        if (arg.equalsIgnoreCase("alwayson")) {
+        if (arg.equalsIgnoreCase("messages")) {
+            return arg;
+        }
+        if (arg.equalsIgnoreCase("datastore")) {
             return arg;
         }
         throw commandArgs.createError(Text.of(new Object[]{TextColors.RED, arg, " is not a valid argument!"}));
@@ -34,8 +37,9 @@ public class LoaderTypeElement extends CommandElement {
     @Override
     public List<String> complete(CommandSource commandSource, CommandArgs commandArgs, CommandContext commandContext) {
         List<String> list = new ArrayList();
-        list.add("online");
-        list.add("alwayson");
+        list.add("core");
+        list.add("messages");
+        list.add("datastore");
         return list;
     }
 

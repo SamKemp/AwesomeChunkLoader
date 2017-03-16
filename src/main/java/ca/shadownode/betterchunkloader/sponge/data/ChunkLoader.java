@@ -11,19 +11,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.flowpowered.math.vector.Vector3i;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Optional;
 import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
-import org.spongepowered.api.item.ItemType;
-import org.spongepowered.api.item.ItemTypes;
-import org.spongepowered.api.item.inventory.*;
-import org.spongepowered.api.item.inventory.property.InventoryTitle;
-import org.spongepowered.api.item.inventory.property.SlotPos;
-import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
@@ -40,20 +30,9 @@ public final class ChunkLoader {
     private Integer radius;
 
     private Timestamp creation;
-    private boolean isAlwaysOn;
+    private Boolean isAlwaysOn;
 
-    /*Radius,Side*/
-    private final Map<Integer, Integer> side = new HashMap<Integer, Integer>() {
-        {
-            put(0, 1);
-            put(1, 3);
-            put(2, 5);
-            put(3, 7);
-            put(4, 9);
-        };
-    };
-
-    public ChunkLoader(UUID uuid, UUID world, UUID owner, Location<World> location, Vector3i chunk, Integer radius, Timestamp creation, boolean isAlwaysOn) {
+    public ChunkLoader(UUID uuid, UUID world, UUID owner, Location<World> location, Vector3i chunk, Integer radius, Timestamp creation, Boolean isAlwaysOn) {
         this.uuid = uuid;
         this.world = world;
         this.owner = owner;
@@ -77,6 +56,11 @@ public final class ChunkLoader {
         return world;
     }
 
+    @XmlAttribute(name = "world")
+    public void setWorld(UUID world) {
+        this.world = world;
+    }
+
     public UUID getOwner() {
         return owner;
     }
@@ -90,22 +74,17 @@ public final class ChunkLoader {
         return location;
     }
 
-    public Timestamp getCreation() {
-        return creation;
+    @XmlAttribute(name = "location")
+    public void setLocation(Location<World> location) {
+        this.location = location;
     }
 
-    @XmlAttribute(name = "creation")
-    public void setCreation(Timestamp creation) {
-        this.creation = creation;
+    public Vector3i getChunk() {
+        return chunk;
     }
 
-    public boolean isAlwaysOn() {
-        return isAlwaysOn;
-    }
-
-    @XmlAttribute(name = "alwaysOn")
-    void setAlwaysOn(boolean isAlwaysOn) {
-        this.isAlwaysOn = isAlwaysOn;
+    public void setChunk(Vector3i chunk) {
+        this.chunk = chunk;
     }
 
     public Integer getRadius() {
@@ -117,30 +96,55 @@ public final class ChunkLoader {
         this.radius = radius;
     }
 
-    public Vector3i getChunk() {
-        return chunk;
+    public Timestamp getCreation() {
+        return creation;
     }
 
-    public boolean isExpired() {
-        PlayerData playerData = BetterChunkLoader.getInstance().getDataStore().getPlayerData(getOwner());
-        LocalDateTime limit = playerData.getLastOnline().toLocalDateTime().plusDays(3);
-        LocalDateTime current = LocalDateTime.now();
-        return current.isAfter(limit);
+    @XmlAttribute(name = "creation")
+    public void setCreation(Timestamp creation) {
+        this.creation = creation;
     }
 
-    public boolean isLoadable() {
+    public Boolean isAlwaysOn() {
+        return isAlwaysOn;
+    }
+
+    @XmlAttribute(name = "alwaysOn")
+    public void setAlwaysOn(Boolean isAlwaysOn) {
+        this.isAlwaysOn = isAlwaysOn;
+    }
+
+    public Boolean isExpired() {
+        Optional<PlayerData> playerData = BetterChunkLoader.getInstance().getDataStore().getOrCreatePlayerData(getOwner());
+        if (playerData.isPresent()) {
+            LocalDateTime limit = playerData.get().getLastOnline().toLocalDateTime().plusDays(3);
+            LocalDateTime current = LocalDateTime.now();
+            return current.isAfter(limit);
+        }
+        return true;
+    }
+
+    public Boolean isLoadable() {
         return blockCheck() && !isExpired();
     }
 
-    public int getSide(Integer index) {
-        return side.get(index);
+    public Integer getChunks() {
+        return Double.valueOf(Math.pow((2 * radius) + 1, 2)).intValue();
     }
 
-    public int getChunks() {
-        return side.get(getRadius()) * side.get(getRadius());
+    public Boolean canEdit(Player player) {
+        if (player.getUniqueId() == getOwner()) {
+            return true;
+        } else {
+            return player.hasPermission("betterchunkloader.chunkloader") || player.hasPermission("betterchunkloader.chunkloader.edit");
+        }
     }
 
-    public boolean blockCheck() {
+    public Boolean canCreate(Player player) {
+        return player.hasPermission("betterchunkloader.chunkloader") || player.hasPermission("betterchunkloader.chunkloader.create") || player.hasPermission("betterchunkloader.chunkloader.create." + (isAlwaysOn() ? "offline" : "online"));
+    }
+
+    public Boolean blockCheck() {
         if (this.location.getBlock() == null) {
             return false;
         }
@@ -151,48 +155,16 @@ public final class ChunkLoader {
         }
     }
 
-    public void showUI(Player player) {
-        PlayerData playerData = BetterChunkLoader.getInstance().getDataStore().getPlayerData(getOwner());
-        String title = (radius != -1 ? "BCL: " + playerData.getName() + " Chunks: " + getChunks() + " " : this.isAlwaysOn() ? "Always On Chunk Loader" : "Online Only ChunkLoader");
-        if (title.length() > 32) {
-            title = title.substring(0, 32);
-        }
-        InventoryArchetype inventoryArchetype = InventoryArchetype.builder().from(InventoryArchetypes.MENU_ROW).property(ChunkLoaderMenu.of(this)).build("archid", "archname");
-        Inventory inventory = Inventory.builder().of(inventoryArchetype).property(InventoryTitle.PROPERTY_NAME, InventoryTitle.of(Text.of(title))).build(BetterChunkLoader.getInstance());
-        if (getRadius() != -1) {
-            addInventoryOption(inventory, new SlotPos(0, 0), ItemTypes.REDSTONE_TORCH, "Remove");
-        }
-
-        int pos = 2;
-        for (int i = 0; i < 5;) {
-            int chunks = side.get(i) * side.get(i);
-            if (getRadius() == i) {
-                addInventoryOption(inventory, new SlotPos(pos, 0), ItemTypes.POTION, "Radius: " + i + " Chunks: " + chunks + " [Active]");
-            } else {
-                addInventoryOption(inventory, new SlotPos(pos, 0), ItemTypes.GLASS_BOTTLE, "Radius: " + i + " Chunks: " + chunks);
-            }
-            pos++;
-            i++;
-        }
-        player.openInventory(inventory, Cause.of(NamedCause.simulated(player)));
-    }
-
-    public void addInventoryOption(Inventory inventory, SlotPos slotPos, ItemType icon, String name) {
-        ItemStack itemStack = ItemStack.builder().itemType(icon).quantity(1).build();
-        itemStack.offer(Keys.DISPLAY_NAME, Text.of(name));
-        inventory.query(slotPos).set(itemStack);
-    }
-
     @Override
     public String toString() {
         return this.world + ":" + this.location.getX() + "," + this.location.getZ() + (this.isAlwaysOn ? "y" : "n") + " - " + this.getChunks() + " - " + this.location.toString();
     }
 
-    public boolean contains(Vector3i vector) {
+    public Boolean contains(Vector3i vector) {
         return location.getX() - radius <= vector.getX() && vector.getX() <= location.getX() + radius && location.getZ() - radius <= vector.getZ() && vector.getZ() <= location.getZ() + radius;
     }
 
-    public boolean contains(int chunkX, int chunkZ) {
+    public Boolean contains(int chunkX, int chunkZ) {
         return location.getX() - radius <= chunkX && chunkX <= location.getX() + radius && location.getZ() - radius <= chunkZ && chunkZ <= location.getZ() + radius;
     }
 

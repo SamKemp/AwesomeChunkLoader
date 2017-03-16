@@ -1,127 +1,101 @@
 package ca.shadownode.betterchunkloader.sponge.commands;
 
 import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
+import ca.shadownode.betterchunkloader.sponge.data.ChunkLoader;
+import ca.shadownode.betterchunkloader.sponge.data.PlayerData;
+import ca.shadownode.betterchunkloader.sponge.utils.Utilities;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
+import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.world.World;
 
 public class CmdList implements CommandExecutor {
 
     private final BetterChunkLoader plugin;
-    
+
     public CmdList(BetterChunkLoader plugin) {
         this.plugin = plugin;
     }
-    
+
     @Override
     public CommandResult execute(CommandSource sender, CommandContext commandContext) throws CommandException {
-        /*
-        int page = 1;
-        if(commandContext.getOne("page").isPresent()){
-        try {
-        page = (Integer)commandContext.getOne("page").get();
-        } catch (Exception e) {
-        commandSource.sendMessage(Text.builder("Invalid page").color(TextColors.RED).build());
-        return null;
+        Optional<String> loaderType = commandContext.<String>getOne("type");
+        Optional<String> playerName = commandContext.<String>getOne("player");
+
+        List<ChunkLoader> chunkLoaders = new ArrayList<>();
+
+        if (loaderType.isPresent()) {
+            boolean alwaysOn = !loaderType.get().equals("online");
+            if (playerName.isPresent()) {
+                if (sender.hasPermission("betterchunkloader.commands.list.others")) {
+                    Optional<UUID> playerUUID = Utilities.getPlayerUUID(playerName.get());
+                    if (playerUUID.isPresent()) {
+                        chunkLoaders = getChunkLoadersByType(playerUUID.get(), alwaysOn);
+                    } else {
+                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.list.noPlayer));
+                        return CommandResult.empty();
+                    }
+                } else {
+                    sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.list.noPermission));
+                }
+            } else {
+                if (sender instanceof Player) {
+                    Player player = (Player) sender;
+                    chunkLoaders = getChunkLoadersByType(player.getUniqueId(), alwaysOn);
+                } else {
+                    chunkLoaders = plugin.getDataStore().getChunkLoadersByType(alwaysOn);
+                }
+            }
+            List<Text> readableCLs = new ArrayList<>();
+            for(ChunkLoader chunkLoader : chunkLoaders) {
+                readableCLs.add(getReadableChunkLoader(chunkLoader));
+            }
+            plugin.getPaginationService().builder()
+                    .contents(readableCLs)
+                    .title(Utilities.parseMessage(plugin.getConfig().getMessages().commands.list.success.title))
+                    .header(Utilities.parseMessage(plugin.getConfig().getMessages().commands.list.success.header))
+                    .padding(Utilities.parseMessage(plugin.getConfig().getMessages().commands.list.success.padding))
+                    .sendTo(sender);
+            return CommandResult.success();
         }
-        }
-        
-        if (args[1].equalsIgnoreCase("all")) {
-        if (!sender.hasPermission("betterchunkloader.list.others")) {
-        sender.sendMessage(ChatColor.RED + "You don't have permission to run this command.");
-        return false;
-        }
-        
-        List<ChunkLoader> clList = plugin.getDataStore().getChunkLoaders();
-        
-        printChunkLoadersList(clList, sender, page);
-        } else if (args[1].equalsIgnoreCase("world")) {
-        if (!sender.hasPermission("betterchunkloader.list.others")) {
-        sender.sendMessage(ChatColor.RED + "You don't have permission to run this command.");
-        return false;
-        }
-        
-        List<ChunkLoader> clList = new ArrayList<ChunkLoader>();
-        for (ChunkLoader cl : plugin.getDataStore().getChunkLoaders()) {
-        if (cl.isAlwaysOn()) {
-        clList.add(cl);
-        }
-        }
-        
-        printChunkLoadersList(clList, sender, page);
-        } else {
-        String playerName = args[1];
-        if (playerName.equalsIgnoreCase("own")) {
-        playerName = sender.getName();
-        }
-        
-        if (sender.getName().equalsIgnoreCase(playerName)) {
-        if (!sender.hasPermission("betterchunkloader.list.own")) {
-        sender.sendMessage(ChatColor.RED + "You don't have permission to run this command.");
-        return false;
-        }
-        } else {
-        if (!sender.hasPermission("betterchunkloader.list.others")) {
-        sender.sendMessage(ChatColor.RED + "You don't have permission to run this command.");
-        return false;
-        }
-        }
-        
-        OfflinePlayer player = instance.getServer().getOfflinePlayer(playerName);
-        if (player == null || !player.hasPlayedBefore()) {
-        sender.sendMessage(ChatColor.RED + "Player not found.");
-        return false;
-        }
-        List<ChunkLoader> clList = plugin.getDataStore().getChunkLoaders(player.getUniqueId());
-        if (clList == null || clList.size() == 0) {
-        sender.sendMessage(ChatColor.RED + "This player doesn't have any chunk loader.");
-        return false;
-        }
-        
-        int clSize = clList.size();
-        int pages = (int) Math.ceil(clSize / 5.00);
-        
-        if (page > pages) {
-        sender.sendMessage(ChatColor.RED + "Invalid page");
-        return false;
-        }
-        
-        sender.sendMessage(ChatColor.GOLD + "== " + player.getName() + "'s loaded chunks (" + page + "/" + pages + ") ==");
-        sender.sendMessage(ChatColor.GRAY + "(World Loader? - Size - Position)");
-        
-        for (int i = (page - 1) * 5; i < page * 5 && i < clSize; i++) {
-        ChunkLoader chunkLoader = clList.get(i);
-        sender.sendMessage(chunkLoader.toString());
-        }
-        
-        }
-        return true;
-        }
-        static private boolean printChunkLoadersList(List<ChunkLoader> clList, CommandSender sender, int page) {
-        
-        int clSize=clList.size();
-        if (clSize==0) {
-        sender.sendMessage(ChatColor.RED + "There isn't loaded chunks yet!");
-        return false;
-        }
-        
-        int pages=(int) Math.ceil(clSize/5.00);
-        
-        if (page>pages) {
-        sender.sendMessage(ChatColor.RED + "Invalid page");
-        return false;
-        }
-        
-        sender.sendMessage(ChatColor.GOLD + "== Loaded Chunks List ("+page+"/"+pages+") ==");
-        sender.sendMessage(ChatColor.GRAY + "(Owner - World Loader? - Size - Position)");
-        
-        for(int i=(page-1)*5; i<page*5 && i<clSize; i++) {
-        ChunkLoader chunkLoader=clList.get(i);
-        sender.sendMessage(chunkLoader.getOwnerName()+" - "+chunkLoader.toString());
-        }*/
-        return null;
+        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.list.noLoaderType));
+        return CommandResult.empty();
     }
 
+    public Text getReadableChunkLoader(ChunkLoader chunkLoader) {
+        HashMap<String, String> args = new HashMap<>();
+        args.put("uuid", chunkLoader.getUniqueId().toString());
+        args.put("radius", String.valueOf(chunkLoader.getRadius()));
+        args.put("type", chunkLoader.isAlwaysOn() ? "Always On" : "Online Only");
+        args.put("chunks", String.valueOf(chunkLoader.getChunks()));
+        args.put("location", Utilities.getReadableLocation(chunkLoader.getLocation()));
+        Optional<World> world = plugin.getGame().getServer().getWorld(chunkLoader.getWorld());
+        if (world.isPresent()) {
+            args.put("world", world.get().getName());
+        }
+        Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(chunkLoader.getOwner());
+        if (playerData.isPresent()) {
+            args.put("owner", playerData.get().getName());
+            args.put("uuid", playerData.get().getUnqiueId().toString());
+        }
+        return Utilities.parseMessage(plugin.getConfig().getMessages().commands.list.success.format, args);
+    }
+
+    public List<ChunkLoader> getChunkLoadersByType(UUID owner, Boolean type) {
+        List<ChunkLoader> chunkLoaders = new ArrayList<>();
+        plugin.getDataStore().getChunkLoadersByOwner(owner).stream().filter((cl) -> (cl.isAlwaysOn().equals(type))).forEachOrdered((cl) -> {
+            chunkLoaders.add(cl);
+        });
+        return chunkLoaders;
+    }
 }

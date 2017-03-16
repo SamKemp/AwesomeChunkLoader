@@ -1,19 +1,22 @@
 package ca.shadownode.betterchunkloader.sponge;
 
-import ca.shadownode.betterchunkloader.sponge.config.Configuration;
 import com.google.inject.Inject;
 import ca.shadownode.betterchunkloader.sponge.commands.CommandManager;
+import ca.shadownode.betterchunkloader.sponge.config.Configuration;
 import ca.shadownode.betterchunkloader.sponge.dataStore.DataStoreManager;
 import ca.shadownode.betterchunkloader.sponge.dataStore.IDataStore;
 import ca.shadownode.betterchunkloader.sponge.events.PlayerListener;
 import ca.shadownode.betterchunkloader.sponge.events.WorldListener;
 import java.io.File;
+import ninja.leaping.configurate.objectmapping.GuiceObjectMapperFactory;
 import org.slf4j.Logger;
+import org.spongepowered.api.Game;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.game.state.GameStoppedServerEvent;
 import org.spongepowered.api.plugin.Plugin;
+import org.spongepowered.api.service.pagination.PaginationService;
 
 @Plugin(id = "betterchunkloader")
 public class BetterChunkLoader {
@@ -26,42 +29,48 @@ public class BetterChunkLoader {
 
     @Inject
     private Logger logger;
+    
+    @Inject
+    private Game game;
 
     @Inject
     @ConfigDir(sharedRoot = false)
     public File configDir;
+
+    @Inject
+    public GuiceObjectMapperFactory factory;
 
     @Listener
     public void onServerStart(GameStartedServerEvent event) {
         plugin = this;
 
         config = new Configuration(this);
-        config.loadConfig();
+        if (config.loadCore() && config.loadMessages()) {
+            dataStoreManager = new DataStoreManager(this);
 
-        dataStoreManager = new DataStoreManager(this);
+            if (dataStoreManager.load()) {
 
-        if (dataStoreManager.load()) {
+                getLogger().info("Loaded " + getDataStore().getChunkLoaders().size() + " chunkloaders.");
+                getLogger().info("Loaded " + getDataStore().getPlayersData().size() + " players.");
 
-            getLogger().info("Loaded " + getDataStore().getChunkLoaders().size() + " chunkloaders.");
-            getLogger().info("Loaded " + getDataStore().getPlayersData().size() + " players.");
+                chunkManager = new ChunkManager(this);
 
-            chunkManager = new ChunkManager(this);
+                int count = 0;
+                count = getDataStore().getChunkLoaders().stream().filter((chunkLoader) -> (chunkLoader.isAlwaysOn() && chunkLoader.isLoadable())).map((chunkLoader) -> {
+                    getChunkManager().loadChunkLoader(chunkLoader);
+                    return chunkLoader;
+                }).map((_item) -> 1).reduce(count, Integer::sum);
+                getLogger().info("Activated " + count + " offline chunk loaders.");
 
-            int count = 0;
-            count = getDataStore().getChunkLoaders().stream().filter((chunkLoader) -> (chunkLoader.isAlwaysOn() && chunkLoader.isLoadable())).map((chunkLoader) -> {
-                getChunkManager().loadChunkLoader(chunkLoader);
-                return chunkLoader;
-            }).map((_item) -> 1).reduce(count, Integer::sum);
-            getLogger().info("Activated " + count + " offline chunk loaders.");
+                getLogger().info("Registering Listeners...");
+                new PlayerListener(this).register();
+                new WorldListener(this).register();
+                new CommandManager(this).register();
 
-            getLogger().info("Registering Listeners...");
-            new PlayerListener(this).register();
-            new WorldListener(this).register();
-            new CommandManager(this).register();
-
-            getLogger().info("Load complete.");
-        } else {
-            getLogger().error("Unable to load a datastore please check your Console/Config!");
+                getLogger().info("Load complete.");
+            } else {
+                getLogger().error("Unable to load a datastore please check your Console/Config!");
+            }
         }
     }
 
@@ -94,5 +103,13 @@ public class BetterChunkLoader {
 
     public Logger getLogger() {
         return logger;
+    }
+
+    public Game getGame() {
+        return game;
+    }
+
+    public PaginationService getPaginationService() {
+        return game.getServiceManager().provide(PaginationService.class).get();
     }
 }

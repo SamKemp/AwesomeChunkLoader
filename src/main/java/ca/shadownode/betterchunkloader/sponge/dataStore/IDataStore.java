@@ -44,21 +44,31 @@ public interface IDataStore {
     public abstract List<ChunkLoader> getChunkLoaders(World world);
     
     /**
+     * Get chunk loaders by type.
+     *
+     * @param isAlwaysOn
+     * @return
+     */
+    public abstract List<ChunkLoader> getChunkLoadersByType(Boolean isAlwaysOn);
+
+    
+    /**
      * Get chunk loaders owned by someone with the specified UUID
      *
      * @param ownerUUID
      * @return
      */
-    public abstract List<ChunkLoader> getChunkLoaders(UUID ownerUUID);
+    public abstract List<ChunkLoader> getChunkLoadersByOwner(UUID ownerUUID);
+
 
     /**
-     * Get chunk loaders at specified chunk
+     * Get chunk loaders at specified chunk of a world
      *
-     * @param worldUUID
+     * @param world
      * @param chunk
      * @return
      */
-    public abstract List<ChunkLoader> getChunkLoadersAt(UUID worldUUID, Vector3i chunk);
+    public abstract List<ChunkLoader> getChunkLoadersAt(World world, Vector3i chunk);
 
     /**
      * Get chunk loader at specified location
@@ -82,46 +92,60 @@ public interface IDataStore {
      */
     public abstract void removeChunkLoader(ChunkLoader chunkLoader);
 
+
     /**
      * Remove chunk loaders owned by someone with the specified UUID
      *
-     * @param ownerUUID
+     * @param owner
      */
-    public abstract void removeChunkLoaders(UUID ownerUUID);
+    public abstract void removeAllChunkLoaders(UUID owner);    
+    
+    /**
+     * Remove chunk loaders in a specific world.
+     *
+     * @param world
+     */
+    public abstract void removeAllChunkLoaders(World world);
 
     /**
-     * Change chunk loader range
+     * Set ChunkLoader radius.
      *
      * @param chunkLoader
-     * @param range
+     * @param radius
      */
-    public abstract void changeChunkLoaderRadius(ChunkLoader chunkLoader, Integer range);
+    public abstract void setChunkLoaderRadius(ChunkLoader chunkLoader, Integer radius);
 
     /**
-     * Get the amount of free always on chunks that this player can still load
-     * until he reaches his chunks limit
+     * Get or create new player data by uuid.
      *
      * @param playerUUID
      * @return
      */
-    /**public abstract int getOfflineChunksAmount(UUID playerUUID);**/
-
+    public abstract Optional<PlayerData> getOrCreatePlayerData(UUID playerUUID);
+    
     /**
-     * Get the amount of free online only chunks that this player can still load
-     * until he reaches his chunks limit
+     * Get or create new player data by name.
+     *
+     * @param playerName
+     * @return
+     */
+    public abstract Optional<PlayerData> getOrCreatePlayerData(String playerName);
+    
+    /**
+     * Get player data by uuid.
      *
      * @param playerUUID
      * @return
      */
-    /**public abstract int getOnlineChunksAmount(UUID playerUUID);**/
-
+    public abstract Optional<PlayerData> getPlayerData(UUID playerUUID);
+    
     /**
-     * Get the player data
+     * Get player data by name.
      *
-     * @param playerUUID
+     * @param playerName
      * @return
      */
-    public abstract PlayerData getPlayerData(UUID playerUUID);
+    public abstract Optional<PlayerData> getPlayerData(String playerName);
 
     /**
      * refresh player data on login.
@@ -142,4 +166,12 @@ public interface IDataStore {
      * @return
      */
     public abstract List<PlayerData> getPlayersData();
+    
+    /**
+     * Check if this user has player data.
+     *
+     * @param playerUUID
+     * @return
+     */
+    public abstract Boolean playerDataExists(UUID playerUUID);
 }

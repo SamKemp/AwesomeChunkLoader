@@ -1,4 +1,4 @@
- package ca.shadownode.betterchunkloader.sponge.commands;
+package ca.shadownode.betterchunkloader.sponge.commands;
 
 import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.ChunkLoader;
@@ -15,25 +15,25 @@ import java.util.List;
 public class CmdPurge implements CommandExecutor {
 
     private final BetterChunkLoader plugin;
-    
+
     public CmdPurge(BetterChunkLoader plugin) {
         this.plugin = plugin;
     }
-    
+
     @Override
     public CommandResult execute(CommandSource sender, CommandContext commandContext) throws CommandException {
-
-        if (!sender.hasPermission("betterchunkloader.purge")) {
-            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdNoPermission));
+        List<ChunkLoader> chunkLoaders = plugin.getDataStore().getChunkLoaders();
+        int count = 0;
+        count = chunkLoaders.stream().filter((chunkLoader) -> (!chunkLoader.blockCheck())).map((chunkLoader) -> {
+            plugin.getDataStore().removeChunkLoader(chunkLoader);
+            return chunkLoader;
+        }).map((_item) -> 1).reduce(count, Integer::sum);
+        if (count > 0) {
+            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.purge.success));
+            return CommandResult.success();
+        } else {
+            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.purge.failure));
             return CommandResult.empty();
         }
-
-        List<ChunkLoader> chunkLoaders = new ArrayList<>(plugin.getDataStore().getChunkLoaders());
-        chunkLoaders.stream().filter((cl) -> !cl.blockCheck()).forEachOrdered((cl) -> {
-            plugin.getDataStore().removeChunkLoader(cl);
-        });
-
-        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().msgPrefix + plugin.getConfig().cmdPurgeSuccess));
-        return CommandResult.success();
     }
 }

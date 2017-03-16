@@ -15,22 +15,22 @@ public class PlayerData {
     private UUID uuid;
     private Timestamp lastOnline;
     private Integer onlineChunksAmount;
-    private Integer offlineChunksAmount;
+    private Integer alwaysOnChunksAmount;
 
     public PlayerData(String name, UUID uuid) {
         this.name = name;
         this.uuid = uuid;
         this.lastOnline = new Timestamp(System.currentTimeMillis());
-        this.onlineChunksAmount = BetterChunkLoader.getInstance().getConfig().defaultOnlineChunks;
-        this.offlineChunksAmount = BetterChunkLoader.getInstance().getConfig().defaultOfflineChunks;
+        this.onlineChunksAmount = BetterChunkLoader.getInstance().getConfig().getCore().chunkLoader.defaultOnline;
+        this.alwaysOnChunksAmount = BetterChunkLoader.getInstance().getConfig().getCore().chunkLoader.defaultAlwaysOn;
     }
 
-    public PlayerData(String name, UUID uuid, Timestamp lastOnline, Integer onlineChunksAmount, Integer offlineChunksAmount) {
+    public PlayerData(String name, UUID uuid, Timestamp lastOnline, Integer onlineChunksAmount, Integer alwaysOnChunksAmount) {
         this.name = name;
         this.uuid = uuid;
         this.lastOnline = lastOnline;
         this.onlineChunksAmount = onlineChunksAmount;
-        this.offlineChunksAmount = offlineChunksAmount;
+        this.alwaysOnChunksAmount = alwaysOnChunksAmount;
     }
     
     public String getName() {
@@ -74,17 +74,17 @@ public class PlayerData {
         this.onlineChunksAmount = this.onlineChunksAmount + onlineChunksAmount;
     }
 
-    public int getOfflineChunksAmount() {
-        return offlineChunksAmount;
+    public int getAlwaysOnChunksAmount() {
+        return alwaysOnChunksAmount;
     }
 
-    @XmlAttribute(name = "offlineAmount")
-    public void setOfflineChunksAmount(Integer offlineChunksAmount) {
-        this.offlineChunksAmount = offlineChunksAmount;
+    @XmlAttribute(name = "alwaysOnAmount")
+    public void setAlwaysOnChunksAmount(Integer alwaysOnChunksAmount) {
+        this.alwaysOnChunksAmount = alwaysOnChunksAmount;
     }
     
-    @XmlAttribute(name = "offlineAmount")
-    public void addOfflineChunksAmount(Integer offlineChunksAmount) {
-        this.offlineChunksAmount = this.offlineChunksAmount + offlineChunksAmount;
+    @XmlAttribute(name = "alwaysOnAmount")
+    public void addAlwaysOnChunksAmount(Integer alwaysOnChunksAmount) {
+        this.alwaysOnChunksAmount = this.alwaysOnChunksAmount + alwaysOnChunksAmount;
     }
 }

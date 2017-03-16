@@ -5,16 +5,18 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.service.user.UserStorageService;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
+import org.spongepowered.api.profile.GameProfile;
+import org.spongepowered.api.profile.GameProfileManager;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColors;
@@ -24,12 +26,14 @@ import org.spongepowered.api.world.World;
 
 public class Utilities {
 
-    public static Text parseMessage(String message, String... args) {
-        for (int i = 0; i < args.length; i++) {
-            String param = args[i];
-            message = message.replace("{" + i + "}", param);
-        }
+    public static Text parseMessage(String message) {
+        return parseMessage(message, new HashMap<>());
+    }
 
+    public static Text parseMessage(String message, HashMap<String, String> args) {
+        for (Map.Entry<String, String> arg : args.entrySet()) {
+            message = message.replace("{" + arg.getKey() + "}", arg.getValue());
+        }
         Text textMessage = TextSerializers.FORMATTING_CODE.deserialize(message);
         List<String> urls = extractUrls(message);
 
@@ -60,6 +64,16 @@ public class Utilities {
             iterator.remove();
         }
         return textMessage;
+    }
+
+    public static List<Text> parseMessageList(List<String> messages) {
+        return parseMessageList(messages, new HashMap<>());
+    }
+
+    public static List<Text> parseMessageList(List<String> messages, HashMap<String, String> args) {
+        List<Text> texts = new ArrayList<>();
+        messages.forEach(s -> texts.add(parseMessage(s, args)));
+        return texts;
     }
 
     public static List<String> extractUrls(String text) {
@@ -98,15 +112,23 @@ public class Utilities {
         }
         return 0;
     }
-    
-    public static Optional<User> getOfflinePlayer(UUID uuid) {
-        Optional<UserStorageService> userStorage = Sponge.getServiceManager().provide(UserStorageService.class);
-        return userStorage.get().get(uuid);
+
+    public static Optional<String> getPlayerName(UUID playerUUID) {
+        GameProfileManager profileManager = Sponge.getServer().getGameProfileManager();
+        Optional<GameProfile> profile = profileManager.getCache().getOrLookupById(playerUUID);
+        if(profile.isPresent()) {
+            return profile.get().getName();
+        }
+        return Optional.empty();
     }
-    
-    public static Optional<User> getOfflinePlayer(String username) {
-        Optional<UserStorageService> userStorage = Sponge.getServiceManager().provide(UserStorageService.class);
-        return userStorage.get().get(username);
+
+    public static Optional<UUID> getPlayerUUID(String playerName) {
+        GameProfileManager profileManager = Sponge.getServer().getGameProfileManager();
+        Optional<GameProfile> profile = profileManager.getCache().getOrLookupByName(playerName);
+        if(profile.isPresent()) {
+            return Optional.ofNullable(profile.get().getUniqueId());
+        }        
+        return Optional.empty();
     }
 
     // Test Code to check which chunks are in use.

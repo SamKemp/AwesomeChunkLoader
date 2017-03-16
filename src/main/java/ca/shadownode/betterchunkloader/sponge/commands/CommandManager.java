@@ -3,8 +3,8 @@ package ca.shadownode.betterchunkloader.sponge.commands;
 import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.elements.ChunksChangeOperatorElement;
 import ca.shadownode.betterchunkloader.sponge.elements.LoaderTypeElement;
+import ca.shadownode.betterchunkloader.sponge.elements.ReloadTypeElement;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.command.args.CommandElement;
 import org.spongepowered.api.command.args.GenericArguments;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.text.Text;
@@ -23,15 +23,15 @@ public class CommandManager {
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("player"))))
                 )
                 .executor(new CmdBalance(this.plugin))
-                .permission("betterchunkloader.balance")
+                .permission("betterchunkloader.commands.balance")
                 .build();
 
         CommandSpec cmdReload = CommandSpec.builder()
                 .arguments(
-                        GenericArguments.none()
+                        GenericArguments.optional(new ReloadTypeElement(Text.of("type")))
                 )
                 .executor(new CmdReload(this.plugin))
-                .permission("betterchunkloader.reload")
+                .permission("betterchunkloader.commands.reload")
                 .build();
 
         CommandSpec cmdInfo = CommandSpec.builder()
@@ -39,52 +39,52 @@ public class CommandManager {
                         GenericArguments.none()
                 )
                 .executor(new CmdInfo(this.plugin))
-                .permission("betterchunkloader.info")
+                .permission("betterchunkloader.commands.info")
                 .build();
 
         CommandSpec cmdChunks = CommandSpec.builder()
-                .arguments(new CommandElement[] {
-                            new ChunksChangeOperatorElement(Text.of("change")),
-                            GenericArguments.string(Text.of("player")),
-                            new LoaderTypeElement(Text.of("type")),
-                            GenericArguments.integer(Text.of("value"))
-                        })
+                .arguments(
+                        new ChunksChangeOperatorElement(Text.of("change")),
+                        GenericArguments.string(Text.of("player")),
+                        new LoaderTypeElement(Text.of("type")),
+                        GenericArguments.integer(Text.of("value"))
+                )
                 .executor(new CmdChunks(this.plugin))
-                .permission("betterchunkloader.chunks")
+                .permission("betterchunkloader.commands.chunks")
                 .build();
-
         CommandSpec cmdList = CommandSpec.builder()
                 .arguments(
-                        GenericArguments.none()
+                        new LoaderTypeElement(Text.of("type")),
+                        GenericArguments.optional(GenericArguments.string(Text.of("player")))
                 )
                 .executor(new CmdList(this.plugin))
-                .permission("betterchunkloader.list")
+                .permission("betterchunkloader.commands.list")
                 .build();
-
         CommandSpec cmdDelete = CommandSpec.builder()
                 .arguments(
-                        GenericArguments.onlyOne(GenericArguments.string(Text.of("player")))
+                        GenericArguments.string(Text.of("player")),
+                        GenericArguments.optional(new LoaderTypeElement(Text.of("type")))
                 )
                 .executor(new CmdDelete(this.plugin))
-                .permission("betterchunkloader.delete")
+                .permission("betterchunkloader.commands.delete")
                 .build();
 
         CommandSpec cmdPurge = CommandSpec.builder()
                 .executor(new CmdPurge(this.plugin))
-                .permission("betterchunkloader.purge")
+                .permission("betterchunkloader.commands.purge")
                 .build();
 
         CommandSpec bclCmdSpec = CommandSpec.builder()
-                .child(cmdBalance, new String[]{"balance", "bal"})
-                .child(cmdInfo, new String[]{"info", "i"})
-                .child(cmdList, new String[]{"list", "ls"})
-                .child(cmdChunks, new String[]{"chunks", "c"})
-                .child(cmdDelete, new String[]{"delete", "d"})
-                .child(cmdPurge, new String[]{"purge"})
-                .child(cmdReload, new String[]{"reload"})
+                .child(cmdBalance, "balance", "bal")
+                .child(cmdInfo, "info", "i")
+                .child(cmdList, "list", "ls")
+                .child(cmdChunks, "chunks", "c")
+                .child(cmdDelete, "delete", "d")
+                .child(cmdPurge, "purge")
+                .child(cmdReload, "reload")
                 .executor(new CmdBCL(this.plugin))
                 .build();
-        
+
         Sponge.getCommandManager().register(this.plugin, bclCmdSpec, "betterchunkloader", "bcl");
     }
 }

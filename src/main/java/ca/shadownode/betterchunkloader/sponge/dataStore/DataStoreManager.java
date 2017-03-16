@@ -8,9 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Data store manager
- */
 public final class DataStoreManager {
 
     private final BetterChunkLoader plugin;
@@ -28,7 +25,7 @@ public final class DataStoreManager {
         }
         registerDataStore("H2", H2DataStore.class);
         registerDataStore("MYSQL", MYSQLDataStore.class);
-        switch (plugin.getConfig().selectedDataStore.toUpperCase()) {
+        switch (plugin.getConfig().getCore().dataStore.selected.toUpperCase()) {
             case "MYSQL":
                 setDataStoreInstance("MYSQL");
                 plugin.getLogger().info("Loading datastore: " + getDataStore().getName());

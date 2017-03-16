@@ -18,9 +18,11 @@ public class CmdBCL implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource sender, CommandContext context) throws CommandException {
-        plugin.getConfig().cmdRootUsage.forEach((message) -> {
-            sender.sendMessage(Utilities.parseMessage(message));
-        });
+        plugin.getPaginationService().builder()
+                .contents(Utilities.parseMessageList(plugin.getConfig().getMessages().commands.usage.items))
+                .title(Utilities.parseMessage(plugin.getConfig().getMessages().commands.usage.title))
+                .padding(Utilities.parseMessage(plugin.getConfig().getMessages().commands.usage.padding))
+                .sendTo(sender);
         return CommandResult.success();
     }
 }
