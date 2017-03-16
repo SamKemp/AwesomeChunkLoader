@@ -29,7 +29,7 @@ public class BetterChunkLoader {
 
     @Inject
     private Logger logger;
-    
+
     @Inject
     private Game game;
 
@@ -76,9 +76,11 @@ public class BetterChunkLoader {
 
     @Listener
     public void onDisable(GameStoppedServerEvent event) {
-        getDataStore().getChunkLoaders().stream().forEachOrdered((cl) -> {
-            getChunkManager().unloadChunkLoader(cl);
-        });
+        if (getDataStore() != null) {
+            getDataStore().getChunkLoaders().stream().forEachOrdered((cl) -> {
+                getChunkManager().unloadChunkLoader(cl);
+            });
+        }
     }
 
     public static BetterChunkLoader getInstance() {

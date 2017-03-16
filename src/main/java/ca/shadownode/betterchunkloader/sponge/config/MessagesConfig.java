@@ -93,7 +93,7 @@ public class MessagesConfig {
                     "&eUsage:",
                     "    &e/bcl balance ?<player>",
                     "    &e/bcl chunks <add|set|remove> <player> <online|alwayson>",
-                    "    &e/bcl delete <player> <type>",
+                    "    &e/bcl delete <player> ?<type>",
                     "    &e/bcl info",
                     "    &e/bcl list <type> ?<player>",
                     "    &e/bcl purge",

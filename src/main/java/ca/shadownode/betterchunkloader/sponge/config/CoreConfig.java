@@ -40,7 +40,7 @@ public class CoreConfig {
             @Setting("Username")
             public String username = "username";
 
-            @Setting("password")
+            @Setting("Password")
             public String password = "password";
             
         }

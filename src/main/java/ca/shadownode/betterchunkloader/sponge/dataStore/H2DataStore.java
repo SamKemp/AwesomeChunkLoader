@@ -10,6 +10,7 @@ import ca.shadownode.betterchunkloader.sponge.data.ChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.LocationSerializer;
 import com.flowpowered.math.vector.Vector3i;
 import java.io.File;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.service.sql.SqlService;
@@ -57,7 +58,7 @@ public class H2DataStore extends AHashMapDataStore {
                     + "onlineAmount SMALLINT(6) UNSIGNED NOT NULL, "
                     + "alwaysOnAmount SMALLINT(6) UNSIGNED NOT NULL, "
                     + ");");
-            if (tableExists("bcl_playerdata")) {
+            if (hasColumn("bcl_playerdata", "offlineAmount")) {
                 connection.createStatement().execute("ALTER TABLE `bcl_playerdata` CHANGE `offlineAmount` `alwaysOnAmount` SMALLINT(6);");
             }
         } catch (SQLException ex) {
@@ -222,14 +223,15 @@ public class H2DataStore extends AHashMapDataStore {
         }
     }
 
-    public Boolean tableExists(String tableName) {
+    public boolean hasColumn(String tableName, String columnName) {
         try (Connection connection = getConnection()) {
-            ResultSet rs = connection.getMetaData().getTables(null, null, tableName, null);
+            DatabaseMetaData md = connection.getMetaData();
+            ResultSet rs = md.getColumns(null, null, tableName, columnName);
             return rs.next();
         } catch (SQLException ex) {
-            plugin.getLogger().error("MYSQL: Error checking if table exists.", ex);
-            return false;
+            plugin.getLogger().error("H2: Error checking if column exists.", ex);
         }
+        return false;
     }
 
     public Connection getConnection() throws SQLException {
