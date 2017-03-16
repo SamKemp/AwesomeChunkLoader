@@ -19,6 +19,7 @@ build.xml
 target/
 
 # Gradle
+.gradle/
 */build/
 build/
 
