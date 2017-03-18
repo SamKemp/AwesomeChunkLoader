@@ -9,23 +9,22 @@ import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.ChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.LocationSerializer;
 import com.flowpowered.math.vector.Vector3i;
+import com.zaxxer.hikari.HikariDataSource;
 import java.io.File;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
-import org.spongepowered.api.Sponge;
-import org.spongepowered.api.service.sql.SqlService;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
-public class H2DataStore extends AHashMapDataStore {
+public final class H2DataStore extends AHashMapDataStore {
 
-    private Optional<SqlService> sqlService;
+    private final Optional<HikariDataSource> dataSource;
     private final LocationSerializer locationSerializer;
 
     public H2DataStore(BetterChunkLoader plugin) {
         super(plugin);
         this.locationSerializer = new LocationSerializer(plugin);
-        sqlService = Sponge.getServiceManager().provide(SqlService.class);
+        this.dataSource = getDataSource();
     }
 
     @Override
@@ -35,8 +34,7 @@ public class H2DataStore extends AHashMapDataStore {
 
     @Override
     public boolean load() {
-        sqlService = Sponge.getServiceManager().provide(SqlService.class);
-        if (!sqlService.isPresent()) {
+        if (!dataSource.isPresent()) {
             plugin.getLogger().error("Selected datastore: 'H2' is not avaiable please select another datastore.");
             return false;
         }
@@ -61,6 +59,7 @@ public class H2DataStore extends AHashMapDataStore {
             if (hasColumn("bcl_playerdata", "offlineAmount")) {
                 connection.createStatement().execute("ALTER TABLE `bcl_playerdata` CHANGE `offlineAmount` `alwaysOnAmount` SMALLINT(6);");
             }
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("Unable to create tables", ex);
             return false;
@@ -89,6 +88,7 @@ public class H2DataStore extends AHashMapDataStore {
                     chunkLoaders.put(chunkLoader.getWorld(), clList);
                 }
             }
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().info("H2: Couldn't read chunk loaders data from H2 database.", ex);
             return false;
@@ -105,6 +105,7 @@ public class H2DataStore extends AHashMapDataStore {
                 );
                 this.playersData.put(playerData.getUnqiueId(), playerData);
             }
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().info("H2: Couldn't read players data from H2 database.", ex);
             return false;
@@ -144,6 +145,7 @@ public class H2DataStore extends AHashMapDataStore {
                 statement.setBoolean(8, chunkLoader.isAlwaysOn());
                 statement.executeUpdate();
             }
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error adding ChunkLoader", ex);
         }
@@ -154,6 +156,7 @@ public class H2DataStore extends AHashMapDataStore {
         super.removeChunkLoader(chunkLoader);
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE uuid = '" + chunkLoader.getUniqueId() + "' LIMIT 1");
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error removing ChunkLoader.", ex);
         }
@@ -164,6 +167,7 @@ public class H2DataStore extends AHashMapDataStore {
         super.removeAllChunkLoaders(owner);
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE owner = '" + owner.toString() + "'");
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error removing ChunkLoaders.", ex);
         }
@@ -174,6 +178,7 @@ public class H2DataStore extends AHashMapDataStore {
         super.removeAllChunkLoaders(world);
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE world = '" + world.getUniqueId().toString() + "'");
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error removing ChunkLoaders.", ex);
         }
@@ -184,6 +189,7 @@ public class H2DataStore extends AHashMapDataStore {
         super.setChunkLoaderRadius(chunkLoader, radius);
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("UPDATE bcl_chunkloaders SET r = " + radius + " WHERE uuid = '" + chunkLoader.getUniqueId() + "' LIMIT 1");
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error changing ChunkLoader range.", ex);
         }
@@ -199,6 +205,7 @@ public class H2DataStore extends AHashMapDataStore {
             statement.setInt(4, playerData.getOnlineChunksAmount());
             statement.setInt(5, playerData.getAlwaysOnChunksAmount());
             statement.executeUpdate();
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error updating player data.", ex);
         }
@@ -227,14 +234,24 @@ public class H2DataStore extends AHashMapDataStore {
         try (Connection connection = getConnection()) {
             DatabaseMetaData md = connection.getMetaData();
             ResultSet rs = md.getColumns(null, null, tableName, columnName);
+            connection.close();
             return rs.next();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error checking if column exists.", ex);
         }
         return false;
     }
+    
+    public Optional<HikariDataSource> getDataSource() {
+        HikariDataSource ds = new HikariDataSource();
+        ds.setMaximumPoolSize(100);
+        ds.setDriverClassName("org.h2.Driver");
+        ds.setJdbcUrl("jdbc:h2://" + new File(plugin.configDir, plugin.getConfig().getCore().dataStore.h2.file).getAbsolutePath());
+        ds.setAutoCommit(false);
+        return Optional.ofNullable(ds);
+    }
 
     public Connection getConnection() throws SQLException {
-        return sqlService.get().getDataSource("jdbc:h2://" + new File(plugin.configDir, plugin.getConfig().getCore().dataStore.h2.file).getAbsolutePath()).getConnection();
+        return dataSource.get().getConnection();
     }
 }

@@ -9,22 +9,21 @@ import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.ChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.LocationSerializer;
 import com.flowpowered.math.vector.Vector3i;
+import com.zaxxer.hikari.HikariDataSource;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
-import org.spongepowered.api.Sponge;
-import org.spongepowered.api.service.sql.SqlService;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
-public class MYSQLDataStore extends AHashMapDataStore {
+public final class MYSQLDataStore extends AHashMapDataStore {
 
-    private Optional<SqlService> sqlService;
+    private final Optional<HikariDataSource> dataSource;
     private final LocationSerializer locationSerializer;
 
     public MYSQLDataStore(BetterChunkLoader plugin) {
         super(plugin);
         this.locationSerializer = new LocationSerializer(plugin);
-        sqlService = Sponge.getServiceManager().provide(SqlService.class);
+        this.dataSource = getDataSource();
     }
 
     @Override
@@ -34,9 +33,8 @@ public class MYSQLDataStore extends AHashMapDataStore {
 
     @Override
     public boolean load() {
-        sqlService = Sponge.getServiceManager().provide(SqlService.class);
-        if (!sqlService.isPresent()) {
-            plugin.getLogger().error("Selected datastore: 'MySQL' is not avaiable please select another datastore.");
+        if (!dataSource.isPresent()) {
+            plugin.getLogger().error("Selected datastore: 'MYSQL' is not avaiable please select another datastore.");
             return false;
         }
         try (Connection connection = getConnection()) {
@@ -60,6 +58,7 @@ public class MYSQLDataStore extends AHashMapDataStore {
             if (hasColumn("bcl_playerdata", "offlineAmount")) {
                 connection.createStatement().execute("ALTER TABLE `bcl_playerdata` CHANGE `offlineAmount` `alwaysOnAmount` SMALLINT(6);");
             }
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("Unable to create tables", ex);
             return false;
@@ -88,6 +87,7 @@ public class MYSQLDataStore extends AHashMapDataStore {
                     chunkLoaders.put(chunkLoader.getWorld(), clList);
                 }
             }
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().info("Couldn't read chunk loaders data from MySQL server.", ex);
             return false;
@@ -104,6 +104,7 @@ public class MYSQLDataStore extends AHashMapDataStore {
                 );
                 this.playersData.put(playerData.getUnqiueId(), playerData);
             }
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().info("Couldn't read players data from MySQL server.", ex);
             return false;
@@ -143,6 +144,7 @@ public class MYSQLDataStore extends AHashMapDataStore {
                 statement.setBoolean(8, chunkLoader.isAlwaysOn());
                 statement.executeUpdate();
             }
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error adding ChunkLoader", ex);
         }
@@ -153,6 +155,7 @@ public class MYSQLDataStore extends AHashMapDataStore {
         super.removeChunkLoader(chunkLoader);
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE uuid = '" + chunkLoader.getUniqueId() + "' LIMIT 1");
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error removing ChunkLoader.", ex);
         }
@@ -163,6 +166,7 @@ public class MYSQLDataStore extends AHashMapDataStore {
         super.removeAllChunkLoaders(playerUUID);
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE owner = '" + playerUUID.toString() + "'");
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error removing ChunkLoaders.", ex);
         }
@@ -173,6 +177,7 @@ public class MYSQLDataStore extends AHashMapDataStore {
         super.removeAllChunkLoaders(world);
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE owner = '" + world.getUniqueId().toString() + "'");
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error removing ChunkLoaders.", ex);
         }
@@ -183,6 +188,7 @@ public class MYSQLDataStore extends AHashMapDataStore {
         super.setChunkLoaderRadius(chunkLoader, radius);
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("UPDATE bcl_chunkloaders SET r = " + radius + " WHERE uuid = '" + chunkLoader.getUniqueId() + "' LIMIT 1");
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error changing ChunkLoader range.", ex);
         }
@@ -199,7 +205,7 @@ public class MYSQLDataStore extends AHashMapDataStore {
             statement.setInt(5, playerData.getAlwaysOnChunksAmount());
             statement.executeUpdate();
         } catch (SQLException ex) {
-            plugin.getLogger().error("MYSQL: Error adding ChunkLoader.", ex);
+            plugin.getLogger().error("MYSQL: Error updating player..", ex);
         }
     }
 
@@ -217,8 +223,9 @@ public class MYSQLDataStore extends AHashMapDataStore {
                     playerData.get().setAlwaysOnChunksAmount(rs.getInt("alwaysOnAmount"));
                 }
             }
+            connection.close();
         } catch (SQLException ex) {
-            plugin.getLogger().error("MYSQL: Error refreshing Player data.", ex);
+            plugin.getLogger().error("MYSQL: Error refreshing player.", ex);
         }
     }
 
@@ -226,6 +233,7 @@ public class MYSQLDataStore extends AHashMapDataStore {
         try (Connection connection = getConnection()) {
             DatabaseMetaData md = connection.getMetaData();
             ResultSet rs = md.getColumns(null, null, tableName, columnName);
+            connection.close();
             return rs.next();
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error checking if column exists.", ex);
@@ -233,14 +241,21 @@ public class MYSQLDataStore extends AHashMapDataStore {
         return false;
     }
 
-    public Connection getConnection() throws SQLException {
-        return sqlService.get().getDataSource(
-                "jdbc:mariadb://"
+    public Optional<HikariDataSource> getDataSource() {
+        HikariDataSource ds = new HikariDataSource();
+        ds.setMaximumPoolSize(100);
+        ds.setDriverClassName("org.mariadb.jdbc.Driver");
+        ds.setJdbcUrl("jdbc:mariadb://"
                 + plugin.getConfig().getCore().dataStore.mysql.hostname
                 + ":" + plugin.getConfig().getCore().dataStore.mysql.port
-                + "/" + plugin.getConfig().getCore().dataStore.mysql.database
-                + "?user=" + plugin.getConfig().getCore().dataStore.mysql.username
-                + "&password=" + plugin.getConfig().getCore().dataStore.mysql.password
-        ).getConnection();
+                + "/" + plugin.getConfig().getCore().dataStore.mysql.database);
+        ds.addDataSourceProperty("user", plugin.getConfig().getCore().dataStore.mysql.username);
+        ds.addDataSourceProperty("password", plugin.getConfig().getCore().dataStore.mysql.password);
+        ds.setAutoCommit(false);
+        return Optional.ofNullable(ds);
+    }
+
+    public Connection getConnection() throws SQLException {
+        return dataSource.get().getConnection();
     }
 }

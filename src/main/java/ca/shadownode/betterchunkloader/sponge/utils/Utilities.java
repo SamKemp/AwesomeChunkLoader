@@ -37,31 +37,25 @@ public class Utilities {
         Text textMessage = TextSerializers.FORMATTING_CODE.deserialize(message);
         List<String> urls = extractUrls(message);
 
-        if (urls.isEmpty()) {
-            return textMessage;
-        }
-
-        Iterator<String> iterator = urls.iterator();
-        while (iterator.hasNext()) {
-            String url = iterator.next();
-            String msgBefore = StringUtils.substringBefore(message, url);
-            String msgAfter = StringUtils.substringAfter(message, url);
-            if (msgBefore == null) {
-                msgBefore = "";
-            } else if (msgAfter == null) {
-                msgAfter = "";
+        if (!urls.isEmpty()) {
+            for (String url : urls) {
+                String msgBefore = StringUtils.substringBefore(message, url);
+                String msgAfter = StringUtils.substringAfter(message, url);
+                if (msgBefore == null) {
+                    msgBefore = "";
+                } else if (msgAfter == null) {
+                    msgAfter = "";
+                }
+                try {
+                    textMessage = Text.of(
+                            TextSerializers.FORMATTING_CODE.deserialize(msgBefore),
+                            TextActions.openUrl(new URL(url)),
+                            Text.of(TextColors.GREEN, url),
+                            TextSerializers.FORMATTING_CODE.deserialize(msgAfter));
+                } catch (MalformedURLException e) {
+                    return Text.of(message);
+                }
             }
-            try {
-                textMessage = Text.of(
-                        TextSerializers.FORMATTING_CODE.deserialize(msgBefore),
-                        TextActions.openUrl(new URL(url)),
-                        Text.of(TextColors.GREEN, url),
-                        TextSerializers.FORMATTING_CODE.deserialize(msgAfter));
-            } catch (MalformedURLException e) {
-                return Text.of(message);
-            }
-
-            iterator.remove();
         }
         return textMessage;
     }
@@ -83,15 +77,13 @@ public class Utilities {
         Matcher urlMatcher;
         try {
             urlMatcher = pattern.matcher(text);
-        } catch (Throwable t) {
+            while (urlMatcher.find()) {
+                containedUrls.add(text.substring(urlMatcher.start(0), urlMatcher.end(0)));
+            }
+            return containedUrls;
+        } catch (Exception ignored) {
             return containedUrls;
         }
-        while (urlMatcher.find()) {
-            containedUrls.add(text.substring(urlMatcher.start(0),
-                    urlMatcher.end(0)));
-        }
-
-        return containedUrls;
     }
 
     public static String getReadableLocation(Location<World> location) {
@@ -116,7 +108,7 @@ public class Utilities {
     public static Optional<String> getPlayerName(UUID playerUUID) {
         GameProfileManager profileManager = Sponge.getServer().getGameProfileManager();
         Optional<GameProfile> profile = profileManager.getCache().getOrLookupById(playerUUID);
-        if(profile.isPresent()) {
+        if (profile.isPresent()) {
             return profile.get().getName();
         }
         return Optional.empty();
@@ -125,9 +117,9 @@ public class Utilities {
     public static Optional<UUID> getPlayerUUID(String playerName) {
         GameProfileManager profileManager = Sponge.getServer().getGameProfileManager();
         Optional<GameProfile> profile = profileManager.getCache().getOrLookupByName(playerName);
-        if(profile.isPresent()) {
+        if (profile.isPresent()) {
             return Optional.ofNullable(profile.get().getUniqueId());
-        }        
+        }
         return Optional.empty();
     }
 

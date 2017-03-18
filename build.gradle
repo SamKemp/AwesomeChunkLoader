@@ -25,7 +25,7 @@ sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
 group = 'ca.shadownode.betterchunkloader'
-version = '3.2-SNAPSHOT'
+version = '3.3-SNAPSHOT'
 
 minecraft {
     forgeVersion = "1.10.2-12.18.3.2221"
@@ -45,6 +45,7 @@ sponge {
 }
 
 repositories {
+    mavenCentral();
     maven {
         name = 'lucko'
         url = 'https://repo.lucko.me/'
@@ -59,7 +60,7 @@ repositories {
     }
 }
 
-dependencies {
+dependencies {    
     compile 'org.spongepowered:spongeforge:1.10.2-2254-5.2.0-BETA-2231'
     compile "me.lucko.luckperms:luckperms-api:2.15"
 }
