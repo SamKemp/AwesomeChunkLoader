@@ -91,6 +91,14 @@ public interface IDataStore {
      * @param chunkLoader
      */
     public abstract void removeChunkLoader(ChunkLoader chunkLoader);
+    
+  
+    /**
+     * Update chunk loader radius in database.
+     *
+     * @param chunkLoader
+     */
+    public abstract void updateChunkLoader(ChunkLoader chunkLoader);
 
 
     /**
@@ -106,30 +114,6 @@ public interface IDataStore {
      * @param world
      */
     public abstract void removeAllChunkLoaders(World world);
-
-    /**
-     * Set ChunkLoader radius.
-     *
-     * @param chunkLoader
-     * @param radius
-     */
-    public abstract void setChunkLoaderRadius(ChunkLoader chunkLoader, Integer radius);
-
-    /**
-     * Get or create new player data by uuid.
-     *
-     * @param playerUUID
-     * @return
-     */
-    public abstract Optional<PlayerData> getOrCreatePlayerData(UUID playerUUID);
-    
-    /**
-     * Get or create new player data by name.
-     *
-     * @param playerName
-     * @return
-     */
-    public abstract Optional<PlayerData> getOrCreatePlayerData(String playerName);
     
     /**
      * Get player data by uuid.
@@ -148,12 +132,6 @@ public interface IDataStore {
     public abstract Optional<PlayerData> getPlayerData(String playerName);
 
     /**
-     * refresh player data on login.
-     * @param uuid
-     */
-    public abstract void refreshPlayer(UUID uuid);
-
-    /**
      * Updates the player data in all active data stores.
      *
      * @param playerData
@@ -166,12 +144,4 @@ public interface IDataStore {
      * @return
      */
     public abstract List<PlayerData> getPlayersData();
-    
-    /**
-     * Check if this user has player data.
-     *
-     * @param playerUUID
-     * @return
-     */
-    public abstract Boolean playerDataExists(UUID playerUUID);
 }

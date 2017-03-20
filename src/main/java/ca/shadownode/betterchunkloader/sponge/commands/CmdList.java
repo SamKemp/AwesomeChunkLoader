@@ -15,7 +15,6 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.World;
 
@@ -78,7 +77,7 @@ public class CmdList implements CommandExecutor {
         args.put("radius", String.valueOf(chunkLoader.getRadius()));
         args.put("type", chunkLoader.isAlwaysOn() ? "Always On" : "Online Only");
         args.put("chunks", String.valueOf(chunkLoader.getChunks()));
-        args.put("location", Utilities.getReadableLocation(chunkLoader.getLocation()));
+        args.put("location", Utilities.getReadableLocation(chunkLoader.getWorld(), chunkLoader.getLocation()));
         Optional<World> world = plugin.getGame().getServer().getWorld(chunkLoader.getWorld());
         if (world.isPresent()) {
             args.put("world", world.get().getName());

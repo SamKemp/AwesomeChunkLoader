@@ -31,7 +31,7 @@ public class ChunkLoaderMenu {
     }
 
     public void showMenu(Player player, ChunkLoader chunkLoader) {
-        Optional<PlayerData> playerData = plugin.getDataStore().getOrCreatePlayerData(chunkLoader.getOwner());
+        Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(chunkLoader.getOwner());
         if(!playerData.isPresent()) {
             return;
         }

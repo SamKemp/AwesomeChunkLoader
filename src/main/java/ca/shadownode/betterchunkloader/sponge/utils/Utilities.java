@@ -1,12 +1,12 @@
 package ca.shadownode.betterchunkloader.sponge.utils;
 
+import com.flowpowered.math.vector.Vector3i;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.spongepowered.api.Sponge;
@@ -86,9 +86,14 @@ public class Utilities {
         }
     }
 
-    public static String getReadableLocation(Location<World> location) {
+    public static String getReadableLocation(UUID worldUUID, Vector3i location) {
         StringBuilder builder = new StringBuilder();
-        builder.append(location.getExtent().getName());
+        Optional<World> world = Sponge.getServer().getWorld(worldUUID);
+        if(world.isPresent()) {
+            builder.append(world.get().getName());
+        }else{
+            builder.append("UNKNOWN");
+        }
         builder.append(" X: ").append(location.getX());
         builder.append(" Y: ").append(location.getY());
         builder.append(" Z: ").append(location.getZ());

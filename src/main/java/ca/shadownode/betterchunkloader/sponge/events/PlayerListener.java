@@ -43,8 +43,7 @@ public class PlayerListener {
     @Listener
     public void onPlayerLogin(ClientConnectionEvent.Join event) {
         Player player = event.getTargetEntity();
-        plugin.getDataStore().refreshPlayer(player.getUniqueId());
-        Optional<PlayerData> playerData = plugin.getDataStore().getOrCreatePlayerData(player.getUniqueId());
+        Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(player.getUniqueId());
         if (playerData.isPresent()) {
             playerData.get().setLastOnline(new Timestamp(System.currentTimeMillis()));
             plugin.getDataStore().updatePlayerData(playerData.get());
@@ -59,7 +58,7 @@ public class PlayerListener {
     @Listener
     public void onPlayerQuit(ClientConnectionEvent.Disconnect event) {
         Player player = event.getTargetEntity();
-        Optional<PlayerData> playerData = plugin.getDataStore().getOrCreatePlayerData(player.getUniqueId());
+        Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(player.getUniqueId());
         if (playerData.isPresent()) {
             playerData.get().setLastOnline(new Timestamp(System.currentTimeMillis()));
             plugin.getDataStore().updatePlayerData(playerData.get());
@@ -91,7 +90,7 @@ public class PlayerListener {
                             UUID.randomUUID(),
                             clickedBlock.getWorldUniqueId(),
                             player.getUniqueId(),
-                            clickedBlock.getLocation().get(),
+                            clickedBlock.getLocation().get().getBlockPosition(),
                             clickedBlock.getLocation().get().getChunkPosition(),
                             -1,
                             new Timestamp(System.currentTimeMillis()),
@@ -108,12 +107,12 @@ public class PlayerListener {
                 args.put("playerName", player.getName());
                 args.put("playerUUID", player.getUniqueId().toString());
                 if (chunkLoader.isPresent()) {
-                    Optional<PlayerData> playerData = plugin.getDataStore().getOrCreatePlayerData(chunkLoader.get().getOwner());
+                    Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(chunkLoader.get().getOwner());
                     if (playerData.isPresent()) {
                         args.put("ownerName", playerData.get().getName());
                         args.put("ownerUUID", playerData.get().getUnqiueId().toString());
                     }
-                    args.put("location", Utilities.getReadableLocation(chunkLoader.get().getLocation()));
+                    args.put("location", Utilities.getReadableLocation(chunkLoader.get().getWorld(), chunkLoader.get().getLocation()));
                     args.put("chunks", String.valueOf(chunkLoader.get().getChunks()));
                     args.put("type", (chunkLoader.get().isAlwaysOn() ? "Always On" : "Online"));
                     if (chunkLoader.get().canEdit(player)) {
@@ -175,11 +174,11 @@ public class PlayerListener {
                 return;
             }
 
-            Optional<PlayerData> playerData = plugin.getDataStore().getOrCreatePlayerData(player.getUniqueId());
-            if(!playerData.isPresent()) {
+            Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(player.getUniqueId());
+            if (!playerData.isPresent()) {
                 return;
             }
-            
+
             Optional<SlotPos> slotPos = getSlotPos(event.getCursorTransaction());
             Optional<Integer> radius = getRadius(event.getCursorTransaction());
             Optional<Integer> chunks = getChunks(event.getCursorTransaction());
@@ -195,15 +194,15 @@ public class PlayerListener {
             } else {
                 available = playerData.get().getOnlineChunksAmount();
             }
-            
+
             switch (slotPos.get().getX()) {
                 case 0: {
-                    plugin.getDataStore().removeChunkLoader(chunkLoader);
                     if (chunkLoader.isAlwaysOn()) {
                         playerData.get().addAlwaysOnChunksAmount(chunkLoader.getChunks());
                     } else {
                         playerData.get().addOnlineChunksAmount(chunkLoader.getChunks());
                     }
+                    plugin.getDataStore().removeChunkLoader(chunkLoader);
                     player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.removed));
                     return;
                 }
@@ -234,9 +233,10 @@ public class PlayerListener {
                         }
                         chunkLoader.setRadius(radius.get());
                         chunkLoader.setCreation(new Timestamp(System.currentTimeMillis()));
-                        plugin.getLogger().info(player.getName() + " made a new chunk loader at " + Utilities.getReadableLocation(chunkLoader.getLocation()) + " with radius " + chunkLoader.getRadius());
+                        plugin.getLogger().info(player.getName() + " made a new chunk loader at " + Utilities.getReadableLocation(chunkLoader.getWorld(), chunkLoader.getLocation()) + " with radius " + chunkLoader.getRadius());
                         plugin.getDataStore().addChunkLoader(chunkLoader);
                         player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.created));
+                        break;
                     } else {
                         if (!player.hasPermission("betterchunkloader.chunkloader") || !player.hasPermission("betterchunkloader.chunkloader.unlimitedchunks")) {
                             if (Math.subtractExact(chunks.get(), chunkLoader.getChunks()) > available) {
@@ -252,12 +252,13 @@ public class PlayerListener {
                                 plugin.getDataStore().updatePlayerData(playerData.get());
                             }
                         }
-                        plugin.getLogger().info(player.getName() + " edited " + playerData.get().getName() + "'s chunk loader at " + Utilities.getReadableLocation(chunkLoader.getLocation()) + " radius from " + chunkLoader.getRadius() + " to " + radius.get());
-                        plugin.getDataStore().setChunkLoaderRadius(chunkLoader, radius.get());
+                        plugin.getLogger().info(player.getName() + " edited " + playerData.get().getName() + "'s chunk loader at " + Utilities.getReadableLocation(chunkLoader.getWorld(), chunkLoader.getLocation()) + " radius from " + chunkLoader.getRadius() + " to " + radius.get());
+                        chunkLoader.setRadius(radius.get());
+                        plugin.getDataStore().updateChunkLoader(chunkLoader);
                         player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.updated, args));
+                        break;
                     }
                 }
-
             }
         }
     }

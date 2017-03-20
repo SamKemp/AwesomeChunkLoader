@@ -32,7 +32,7 @@ public class CmdChunks implements CommandExecutor {
             sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.noPlayerExists));
             return CommandResult.empty();
         }
-        Optional<PlayerData> playerData = plugin.getDataStore().getOrCreatePlayerData(playerUUID.get());
+        Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(playerUUID.get());
         if (!playerData.isPresent()) {
             sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.noPlayerExists));
             return CommandResult.empty();

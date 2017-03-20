@@ -52,7 +52,7 @@ public class WorldListener {
         if (chunkLoader.isPresent()) {
 
             Player player = event.getCause().last(Player.class).get();
-            Optional<PlayerData> playerData = plugin.getDataStore().getOrCreatePlayerData(chunkLoader.get().getOwner());
+            Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(chunkLoader.get().getOwner());
             if (playerData.isPresent()) {
                 if (chunkLoader.get().isAlwaysOn()) {
                     playerData.get().addAlwaysOnChunksAmount(chunkLoader.get().getChunks());
@@ -68,7 +68,7 @@ public class WorldListener {
                 args.put("ownerName", playerData.get().getName());
                 args.put("owner", playerData.get().getUnqiueId().toString());
                 args.put("type", chunkLoader.get().isAlwaysOn() ? "Always On" : "Online Only");
-                args.put("location", Utilities.getReadableLocation(chunkLoader.get().getLocation()));
+                args.put("location", Utilities.getReadableLocation(chunkLoader.get().getWorld(), chunkLoader.get().getLocation()));
                 args.put("chunks", String.valueOf(chunkLoader.get().getChunks()));
 
                 player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.removed, args));
@@ -77,7 +77,7 @@ public class WorldListener {
                 if (owner.isPresent() && player != owner.get()) {
                     player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.ownerNotify, args));
                 }
-                plugin.getLogger().info(player.getName() + " broke " + owner.get().getName() + "'s chunk loader at " + Utilities.getReadableLocation(chunkLoader.get().getLocation()));
+                plugin.getLogger().info(player.getName() + " broke " + owner.get().getName() + "'s chunk loader at " + Utilities.getReadableLocation(chunkLoader.get().getWorld(), chunkLoader.get().getLocation()));
             }
         }
     }

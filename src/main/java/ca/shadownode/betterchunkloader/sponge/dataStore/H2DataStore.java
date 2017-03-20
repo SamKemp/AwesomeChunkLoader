@@ -7,7 +7,8 @@ import java.sql.SQLException;
 import java.util.*;
 import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.ChunkLoader;
-import ca.shadownode.betterchunkloader.sponge.data.LocationSerializer;
+import ca.shadownode.betterchunkloader.sponge.data.VectorSerializer;
+import ca.shadownode.betterchunkloader.sponge.utils.Utilities;
 import com.flowpowered.math.vector.Vector3i;
 import com.zaxxer.hikari.HikariDataSource;
 import java.io.File;
@@ -16,14 +17,16 @@ import java.sql.PreparedStatement;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
-public final class H2DataStore extends AHashMapDataStore {
+public final class H2DataStore implements IDataStore {
+
+    private final BetterChunkLoader plugin;
 
     private final Optional<HikariDataSource> dataSource;
-    private final LocationSerializer locationSerializer;
+    private final VectorSerializer serializer;
 
     public H2DataStore(BetterChunkLoader plugin) {
-        super(plugin);
-        this.locationSerializer = new LocationSerializer(plugin);
+        this.plugin = plugin;
+        this.serializer = new VectorSerializer(plugin);
         this.dataSource = getDataSource();
     }
 
@@ -64,11 +67,17 @@ public final class H2DataStore extends AHashMapDataStore {
             plugin.getLogger().error("Unable to create tables", ex);
             return false;
         }
+        return true;
+    }
+
+    @Override
+    public List<ChunkLoader> getChunkLoaders() {
+        List<ChunkLoader> clList = new ArrayList<>();
         try (Connection connection = getConnection()) {
             ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_chunkloaders");
             while (rs.next()) {
-                Optional<Location<World>> optLocation = locationSerializer.deserializeLocation(rs.getString("location"));
-                Optional<Vector3i> optVector = locationSerializer.deserializeVector(rs.getString("chunk"));
+                Optional<Vector3i> optLocation = serializer.deserialize(rs.getString("location"));
+                Optional<Vector3i> optVector = serializer.deserialize(rs.getString("chunk"));
                 if (optLocation.isPresent() && optVector.isPresent()) {
                     ChunkLoader chunkLoader = new ChunkLoader(
                             UUID.fromString(rs.getString("uuid")),
@@ -80,43 +89,120 @@ public final class H2DataStore extends AHashMapDataStore {
                             rs.getTimestamp("creation"),
                             rs.getBoolean("alwaysOn")
                     );
-                    List<ChunkLoader> clList = this.chunkLoaders.get(chunkLoader.getWorld());
-                    if (clList == null) {
-                        clList = new ArrayList<>();
-                    }
                     clList.add(chunkLoader);
-                    chunkLoaders.put(chunkLoader.getWorld(), clList);
                 }
             }
             connection.close();
+            return clList;
         } catch (SQLException ex) {
             plugin.getLogger().info("H2: Couldn't read chunk loaders data from H2 database.", ex);
-            return false;
+            return new ArrayList<>();
         }
-        try (Connection connection = getConnection()) {
-            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_playerdata");
-            while (rs.next()) {
-                PlayerData playerData = new PlayerData(
-                        rs.getString("username"),
-                        UUID.fromString(rs.getString("uuid")),
-                        rs.getTimestamp("lastOnline"),
-                        rs.getInt("onlineAmount"),
-                        rs.getInt("alwaysOnAmount")
-                );
-                this.playersData.put(playerData.getUnqiueId(), playerData);
-            }
-            connection.close();
-        } catch (SQLException ex) {
-            plugin.getLogger().info("H2: Couldn't read players data from H2 database.", ex);
-            return false;
-        }
-        return true;
     }
 
     @Override
+    public List<ChunkLoader> getChunkLoaders(World world) {
+        List<ChunkLoader> clList = new ArrayList<>();
+        try (Connection connection = getConnection()) {
+            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_chunkloaders WHERE world = '" + world.getUniqueId().toString() + "'");
+            while (rs.next()) {
+                Optional<Vector3i> optLocation = serializer.deserialize(rs.getString("location"));
+                Optional<Vector3i> optVector = serializer.deserialize(rs.getString("chunk"));
+                if (optLocation.isPresent() && optVector.isPresent()) {
+                    ChunkLoader chunkLoader = new ChunkLoader(
+                            UUID.fromString(rs.getString("uuid")),
+                            UUID.fromString(rs.getString("world")),
+                            UUID.fromString(rs.getString("owner")),
+                            optLocation.get(),
+                            optVector.get(),
+                            rs.getInt("r"),
+                            rs.getTimestamp("creation"),
+                            rs.getBoolean("alwaysOn")
+                    );
+                    clList.add(chunkLoader);
+                }
+            }
+            connection.close();
+            return clList;
+        } catch (SQLException ex) {
+            plugin.getLogger().info("H2: Couldn't read chunk loaders data from H2 database.", ex);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<ChunkLoader> getChunkLoadersByType(Boolean isAlwaysOn) {
+        List<ChunkLoader> clList = new ArrayList<>();
+        try (Connection connection = getConnection()) {
+            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_chunkloaders WHERE alwaysOn = '" + isAlwaysOn + "'");
+            while (rs.next()) {
+                Optional<Vector3i> optLocation = serializer.deserialize(rs.getString("location"));
+                Optional<Vector3i> optVector = serializer.deserialize(rs.getString("chunk"));
+                if (optLocation.isPresent() && optVector.isPresent()) {
+                    ChunkLoader chunkLoader = new ChunkLoader(
+                            UUID.fromString(rs.getString("uuid")),
+                            UUID.fromString(rs.getString("world")),
+                            UUID.fromString(rs.getString("owner")),
+                            optLocation.get(),
+                            optVector.get(),
+                            rs.getInt("r"),
+                            rs.getTimestamp("creation"),
+                            rs.getBoolean("alwaysOn")
+                    );
+                    clList.add(chunkLoader);
+                }
+            }
+            connection.close();
+            return clList;
+        } catch (SQLException ex) {
+            plugin.getLogger().info("H2: Couldn't read chunk loaders data from H2 database.", ex);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<ChunkLoader> getChunkLoadersByOwner(UUID ownerUUID) {
+        List<ChunkLoader> clList = new ArrayList<>();
+        try (Connection connection = getConnection()) {
+            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_chunkloaders WHERE owner = '" + ownerUUID.toString() + "'");
+            while (rs.next()) {
+                Optional<Vector3i> optLocation = serializer.deserialize(rs.getString("location"));
+                Optional<Vector3i> optVector = serializer.deserialize(rs.getString("chunk"));
+                if (optLocation.isPresent() && optVector.isPresent()) {
+                    ChunkLoader chunkLoader = new ChunkLoader(
+                            UUID.fromString(rs.getString("uuid")),
+                            UUID.fromString(rs.getString("world")),
+                            UUID.fromString(rs.getString("owner")),
+                            optLocation.get(),
+                            optVector.get(),
+                            rs.getInt("r"),
+                            rs.getTimestamp("creation"),
+                            rs.getBoolean("alwaysOn")
+                    );
+                    clList.add(chunkLoader);
+                }
+            }
+            connection.close();
+            return clList;
+        } catch (SQLException ex) {
+            plugin.getLogger().info("H2: Couldn't read chunk loaders data from H2 database.", ex);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<ChunkLoader> getChunkLoadersAt(World world, Vector3i chunk) {
+        List<ChunkLoader> chunkloaders = new ArrayList<>();
+        getChunkLoaders(world).stream().filter((chunkLoader) -> (chunkLoader.getChunk().equals(chunk))).forEachOrdered((chunkLoader) -> {
+            chunkloaders.add(chunkLoader);
+        });
+        return chunkloaders;
+    }
+    
+    @Override
     public Optional<ChunkLoader> getChunkLoaderAt(Location<World> blockLocation) {
-        List<ChunkLoader> chunkloaders = this.chunkLoaders.get(blockLocation.getExtent().getUniqueId());
-        if (chunkLoaders == null || chunkLoaders.isEmpty()) {
+        List<ChunkLoader> chunkloaders = getChunkLoaders(blockLocation.getExtent());
+        if (chunkloaders == null || chunkloaders.isEmpty()) {
             return Optional.empty();
         }
         for (ChunkLoader chunkLoader : chunkloaders) {
@@ -129,12 +215,11 @@ public final class H2DataStore extends AHashMapDataStore {
 
     @Override
     public void addChunkLoader(ChunkLoader chunkLoader) {
-        super.addChunkLoader(chunkLoader);
         try (Connection connection = getConnection()) {
-            Optional<String> locationStr = locationSerializer.serializeLocation(chunkLoader.getLocation());
-            Optional<String> vectorStr = locationSerializer.serializeVector(chunkLoader.getChunk());
+            Optional<String> locationStr = serializer.serialize(chunkLoader.getLocation());
+            Optional<String> vectorStr = serializer.serialize(chunkLoader.getChunk());
             if (locationStr.isPresent() && vectorStr.isPresent()) {
-                PreparedStatement statement = connection.prepareStatement("MERGE INTO bcl_chunkloaders VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                PreparedStatement statement = connection.prepareStatement("INSERT INTO bcl_chunkloaders VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
                 statement.setString(1, chunkLoader.getUniqueId().toString());
                 statement.setString(2, chunkLoader.getWorld().toString());
                 statement.setString(3, chunkLoader.getOwner().toString());
@@ -153,7 +238,6 @@ public final class H2DataStore extends AHashMapDataStore {
 
     @Override
     public void removeChunkLoader(ChunkLoader chunkLoader) {
-        super.removeChunkLoader(chunkLoader);
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE uuid = '" + chunkLoader.getUniqueId() + "' LIMIT 1");
             connection.close();
@@ -163,8 +247,30 @@ public final class H2DataStore extends AHashMapDataStore {
     }
 
     @Override
+    public void updateChunkLoader(ChunkLoader chunkLoader) {
+        try (Connection connection = getConnection()) {
+            Optional<String> locationStr = serializer.serialize(chunkLoader.getLocation());
+            Optional<String> vectorStr = serializer.serialize(chunkLoader.getChunk());
+            if (locationStr.isPresent() && vectorStr.isPresent()) {
+                PreparedStatement statement = connection.prepareStatement("MERGE INTO bcl_chunkloaders VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                statement.setString(1, chunkLoader.getUniqueId().toString());
+                statement.setString(2, chunkLoader.getWorld().toString());
+                statement.setString(3, chunkLoader.getOwner().toString());
+                statement.setObject(4, locationStr.get());
+                statement.setObject(5, vectorStr.get());
+                statement.setInt(6, chunkLoader.getRadius());
+                statement.setTimestamp(7, chunkLoader.getCreation());
+                statement.setBoolean(8, chunkLoader.isAlwaysOn());
+                statement.executeUpdate();
+            }
+            connection.close();
+        } catch (SQLException ex) {
+            plugin.getLogger().error("H2: Error updating chunk loader in database.", ex);
+        }
+    }
+
+    @Override
     public void removeAllChunkLoaders(UUID owner) {
-        super.removeAllChunkLoaders(owner);
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE owner = '" + owner.toString() + "'");
             connection.close();
@@ -175,7 +281,6 @@ public final class H2DataStore extends AHashMapDataStore {
 
     @Override
     public void removeAllChunkLoaders(World world) {
-        super.removeAllChunkLoaders(world);
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE world = '" + world.getUniqueId().toString() + "'");
             connection.close();
@@ -185,14 +290,48 @@ public final class H2DataStore extends AHashMapDataStore {
     }
 
     @Override
-    public void setChunkLoaderRadius(ChunkLoader chunkLoader, Integer radius) {
-        super.setChunkLoaderRadius(chunkLoader, radius);
+    public Optional<PlayerData> getPlayerData(UUID playerUUID) {
         try (Connection connection = getConnection()) {
-            connection.createStatement().executeUpdate("UPDATE bcl_chunkloaders SET r = " + radius + " WHERE uuid = '" + chunkLoader.getUniqueId() + "' LIMIT 1");
-            connection.close();
+            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_playerdata WHERE uuid = '" + playerUUID.toString() + "' LIMIT 1");
+            if (rs.next()) {
+                return Optional.ofNullable(new PlayerData(
+                        rs.getString("username"),
+                        UUID.fromString(rs.getString("uuid")),
+                        rs.getTimestamp("lastOnline"),
+                        rs.getInt("onlineAmount"),
+                        rs.getInt("alwaysOnAmount")
+                ));
+            }
+            Optional<String> playerName = Utilities.getPlayerName(playerUUID);
+            if (playerName.isPresent()) {
+                return Optional.ofNullable(new PlayerData(
+                        playerName.get(),
+                        playerUUID
+                ));
+            }
         } catch (SQLException ex) {
-            plugin.getLogger().error("H2: Error changing ChunkLoader range.", ex);
+            plugin.getLogger().error("H2: Error refreshing Player data.", ex);
         }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<PlayerData> getPlayerData(String playerName) {
+        try (Connection connection = getConnection()) {
+            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_playerdata WHERE username = '" + playerName + "' LIMIT 1");
+            if (rs.next()) {
+                return Optional.ofNullable(new PlayerData(
+                        rs.getString("username"),
+                        UUID.fromString(rs.getString("uuid")),
+                        rs.getTimestamp("lastOnline"),
+                        rs.getInt("onlineAmount"),
+                        rs.getInt("alwaysOnAmount")
+                ));
+            }
+        } catch (SQLException ex) {
+            plugin.getLogger().error("H2: Error getting player data for: " + playerName, ex);
+        }
+        return Optional.empty();
     }
 
     @Override
@@ -207,27 +346,29 @@ public final class H2DataStore extends AHashMapDataStore {
             statement.executeUpdate();
             connection.close();
         } catch (SQLException ex) {
-            plugin.getLogger().error("H2: Error updating player data.", ex);
+            plugin.getLogger().error("H2: Error updating player data for: " + playerData.getName(), ex);
         }
     }
-
-    @Override
-    public void refreshPlayer(UUID uuid) {
+    
+   @Override
+    public List<PlayerData> getPlayersData() {
+        List<PlayerData> playerData = new ArrayList<>();
         try (Connection connection = getConnection()) {
-            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_playerdata WHERE uuid = '" + uuid.toString() + "' LIMIT 1");
-            while (rs.next()) {
-                Optional<PlayerData> playerData = this.getOrCreatePlayerData(uuid);
-                if (playerData.isPresent()) {
-                    playerData.get().setName(rs.getString("username"));
-                    playerData.get().setUniqueId(UUID.fromString(rs.getString("uuid")));
-                    playerData.get().setLastOnline(rs.getTimestamp("lastOnline"));
-                    playerData.get().setOnlineChunksAmount(rs.getInt("onlineAmount"));
-                    playerData.get().setAlwaysOnChunksAmount(rs.getInt("alwaysOnAmount"));
-                }
+            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_playerdata");
+            while(rs.next()) {
+                playerData.add(new PlayerData(
+                        rs.getString("username"),
+                        UUID.fromString(rs.getString("uuid")),
+                        rs.getTimestamp("lastOnline"),
+                        rs.getInt("onlineAmount"),
+                        rs.getInt("alwaysOnAmount")
+                ));
             }
+            return playerData;
         } catch (SQLException ex) {
-            plugin.getLogger().error("H2: Error refreshing Player data.", ex);
+            plugin.getLogger().error("H2: Error getting all player data.", ex);
         }
+        return new ArrayList<>();
     }
 
     public boolean hasColumn(String tableName, String columnName) {
@@ -241,7 +382,7 @@ public final class H2DataStore extends AHashMapDataStore {
         }
         return false;
     }
-    
+
     public Optional<HikariDataSource> getDataSource() {
         HikariDataSource ds = new HikariDataSource();
         ds.setMaximumPoolSize(100);

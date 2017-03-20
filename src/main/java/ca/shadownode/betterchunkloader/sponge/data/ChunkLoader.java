@@ -12,6 +12,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.flowpowered.math.vector.Vector3i;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import org.spongepowered.api.Sponge;
+import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.world.Location;
@@ -25,14 +27,14 @@ public final class ChunkLoader {
     private UUID world;
     private UUID owner;
 
-    private Location<World> location;
+    private Vector3i location;
     private Vector3i chunk;
     private Integer radius;
 
     private Timestamp creation;
     private Boolean isAlwaysOn;
 
-    public ChunkLoader(UUID uuid, UUID world, UUID owner, Location<World> location, Vector3i chunk, Integer radius, Timestamp creation, Boolean isAlwaysOn) {
+    public ChunkLoader(UUID uuid, UUID world, UUID owner, Vector3i location, Vector3i chunk, Integer radius, Timestamp creation, Boolean isAlwaysOn) {
         this.uuid = uuid;
         this.world = world;
         this.owner = owner;
@@ -70,12 +72,12 @@ public final class ChunkLoader {
         this.owner = owner;
     }
 
-    public Location<World> getLocation() {
+    public Vector3i getLocation() {
         return location;
     }
 
     @XmlAttribute(name = "location")
-    public void setLocation(Location<World> location) {
+    public void setLocation(Vector3i location) {
         this.location = location;
     }
 
@@ -115,7 +117,7 @@ public final class ChunkLoader {
     }
 
     public Boolean isExpired() {
-        Optional<PlayerData> playerData = BetterChunkLoader.getInstance().getDataStore().getOrCreatePlayerData(getOwner());
+        Optional<PlayerData> playerData = BetterChunkLoader.getInstance().getDataStore().getPlayerData(getOwner());
         if (playerData.isPresent()) {
             LocalDateTime limit = playerData.get().getLastOnline().toLocalDateTime().plusDays(3);
             LocalDateTime current = LocalDateTime.now();
@@ -145,14 +147,19 @@ public final class ChunkLoader {
     }
 
     public Boolean blockCheck() {
-        if (this.location.getBlock() == null) {
-            return false;
+        Optional<World> _world = Sponge.getServer().getWorld(this.world);
+        if (_world.isPresent()) {
+            if (location == null) {
+                return false;
+            }
+            BlockState block = _world.get().getBlock(location);
+            if (isAlwaysOn) {
+                return block.getType().equals(BlockTypes.DIAMOND_BLOCK);
+            } else {
+                return block.getType().equals(BlockTypes.IRON_BLOCK);
+            }
         }
-        if (isAlwaysOn) {
-            return this.location.getBlock().getType().equals(BlockTypes.DIAMOND_BLOCK);
-        } else {
-            return this.location.getBlock().getType().equals(BlockTypes.IRON_BLOCK);
-        }
+        return false;
     }
 
     @Override
