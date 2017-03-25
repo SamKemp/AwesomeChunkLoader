@@ -36,15 +36,24 @@ public class ChunkManager {
             Map<String, Integer> ticketConstraints = (Map<String, Integer>) getField(ForgeChunkManager.class, "ticketConstraints").get(null);
             Map<String, Integer> chunkConstraints = (Map<String, Integer>) getField(ForgeChunkManager.class, "chunkConstraints").get(null);
 
-            ticketConstraints.put("BetterChunkLoader", Integer.MAX_VALUE);
-            chunkConstraints.put("BetterChunkLoader", Integer.MAX_VALUE);
-            
+            ticketConstraints.put("betterchunkloader", Integer.MAX_VALUE);
+            chunkConstraints.put("betterchunkloader", Integer.MAX_VALUE);
+
         } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException ex) {
             plugin.getLogger().debug("ChunkManager failed to force chunk constraints", ex);
         }
         ticketManager = Sponge.getServiceManager().provide(ChunkTicketManager.class);
         if (ticketManager.isPresent()) {
             ticketManager.get().registerCallback(plugin, new ChunkLoadingCallback(plugin));
+            if (plugin.getConfig().getCore().debug) {
+                System.out.println("MaxTickets: " + ticketManager.get().getMaxTickets(plugin.plugincontainer));
+                Sponge.getServer().getWorlds().stream().map((world) -> {
+                    System.out.println("AvailTicket : " + world.getName() + ":" + ticketManager.get().getAvailableTickets(plugin.plugincontainer, world));
+                    return world;
+                }).forEachOrdered((world) -> {
+                    System.out.println("ForcedChunks : " + world.getName() + ":" + ticketManager.get().getForcedChunks(world));
+                });
+            }
         }
     }
 
@@ -59,7 +68,7 @@ public class ChunkManager {
         }
         List<Chunk> chunks = getChunks(chunkLoader.getRadius(), mainChunk.get());
         chunks.forEach((chunk) -> {
-            loadChunk(world.get(), chunk);
+            loadChunk(chunkLoader, chunk);
         });
         return true;
     }
@@ -75,10 +84,7 @@ public class ChunkManager {
         }
         List<Chunk> chunks = getChunks(chunkLoader.getRadius(), mainChunk.get());
         chunks.forEach((chunk) -> {
-            List<ChunkLoader> clList = plugin.getDataStore().getChunkLoadersAt(world.get(), chunk.getPosition());
-            if (clList.isEmpty()) {
-                unloadChunk(world.get(), chunk);
-            }
+            unloadChunk(chunkLoader, chunk);
         });
         return true;
     }
@@ -87,23 +93,27 @@ public class ChunkManager {
      *
      * Loads chunk using old or new ticket.
      *
-     * @param world
+     * @param chunkLoader
      * @param chunk
      * @return
      */
-    public boolean loadChunk(World world, Chunk chunk) {
+    public boolean loadChunk(ChunkLoader chunkLoader, Chunk chunk) {
         if (!ticketManager.isPresent()) {
             return false;
         }
         Optional<LoadingTicket> ticket;
-        if (tickets.containsKey(world.getUniqueId()) && tickets.get(world.getUniqueId()).isPresent()) {
-            ticket = tickets.get(world.getUniqueId());
+        if (tickets.containsKey(chunkLoader.getUniqueId()) && tickets.get(chunkLoader.getUniqueId()).isPresent()) {
+            ticket = tickets.get(chunkLoader.getUniqueId());
         } else {
-            ticket = ticketManager.get().createTicket(plugin, world);
-            tickets.put(world.getUniqueId(), ticket);
+            ticket = ticketManager.get().createTicket(plugin, chunk.getWorld());
+            tickets.put(chunkLoader.getUniqueId(), ticket);
         }
         if (ticket.isPresent() && chunk != null) {
             ticket.get().forceChunk(chunk.getPosition());
+            if (plugin.getConfig().getCore().debug) {
+                System.out.println("LOAD");
+                System.out.println("CList: " + Arrays.toString(ticket.get().getChunkList().toArray()));
+            }
             return true;
         }
         return false;
@@ -112,19 +122,22 @@ public class ChunkManager {
     /**
      * Unloads chunk using tickets.
      *
-     * @param world
+     * @param chunkLoader
      * @param chunk
      * @return
      */
-    public boolean unloadChunk(World world, Chunk chunk) {
+    public boolean unloadChunk(ChunkLoader chunkLoader, Chunk chunk) {
         if (!ticketManager.isPresent()) {
             return false;
         }
-        Optional<LoadingTicket> ticket;
-        if (tickets.containsKey(world.getUniqueId()) && tickets.get(world.getUniqueId()).isPresent()) {
-            ticket = tickets.get(world.getUniqueId());
+        if (tickets.containsKey(chunkLoader.getUniqueId())) {
+            Optional<LoadingTicket> ticket = tickets.get(chunkLoader.getUniqueId());
             if (ticket.isPresent() && chunk != null) {
                 ticket.get().unforceChunk(chunk.getPosition());
+                if (plugin.getConfig().getCore().debug) {
+                    System.out.println("UNLOAD");
+                    System.out.println("CList: " + Arrays.toString(ticket.get().getChunkList().toArray()));
+                }
                 return true;
             }
         }

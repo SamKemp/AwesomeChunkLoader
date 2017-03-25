@@ -16,7 +16,6 @@ import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
 @XmlRootElement
@@ -31,10 +30,10 @@ public final class ChunkLoader {
     private Vector3i chunk;
     private Integer radius;
 
-    private Timestamp creation;
+    private Long creation;
     private Boolean isAlwaysOn;
 
-    public ChunkLoader(UUID uuid, UUID world, UUID owner, Vector3i location, Vector3i chunk, Integer radius, Timestamp creation, Boolean isAlwaysOn) {
+    public ChunkLoader(UUID uuid, UUID world, UUID owner, Vector3i location, Vector3i chunk, Integer radius, Long creation, Boolean isAlwaysOn) {
         this.uuid = uuid;
         this.world = world;
         this.owner = owner;
@@ -98,12 +97,12 @@ public final class ChunkLoader {
         this.radius = radius;
     }
 
-    public Timestamp getCreation() {
+    public Long getCreation() {
         return creation;
     }
 
     @XmlAttribute(name = "creation")
-    public void setCreation(Timestamp creation) {
+    public void setCreation(Long creation) {
         this.creation = creation;
     }
 
@@ -119,15 +118,13 @@ public final class ChunkLoader {
     public Boolean isExpired() {
         Optional<PlayerData> playerData = BetterChunkLoader.getInstance().getDataStore().getPlayerData(getOwner());
         if (playerData.isPresent()) {
-            LocalDateTime limit = playerData.get().getLastOnline().toLocalDateTime().plusDays(3);
-            LocalDateTime current = LocalDateTime.now();
-            return current.isAfter(limit);
+            return System.currentTimeMillis() - playerData.get().getLastOnline() > BetterChunkLoader.getInstance().getConfig().getCore().chunkLoader.expiry * 3600000L;
         }
         return true;
     }
 
-    public Boolean isLoadable() {
-        return blockCheck() && !isExpired();
+    public boolean isLoadable() {
+        return (Sponge.getServer().getPlayer(owner).isPresent() || (this.isAlwaysOn && !this.isExpired())) && this.blockCheck();
     }
 
     public Integer getChunks() {

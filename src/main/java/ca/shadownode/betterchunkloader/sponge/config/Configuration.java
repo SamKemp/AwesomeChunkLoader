@@ -36,7 +36,7 @@ public final class Configuration {
             loader.save(config);
             return true;
         } catch (IOException | ObjectMappingException ex) {
-            plugin.getLogger().error("[Core] Failed to load core configuration.", ex);
+            plugin.getLogger().error("Failed to load core configuration.", ex);
             return false;
         }
     }
@@ -53,7 +53,7 @@ public final class Configuration {
             loader.save(config);
             return true;
         } catch (IOException | ObjectMappingException ex) {
-            plugin.getLogger().error("[Core] Failed to load messages configuration.", ex);
+            plugin.getLogger().error("Failed to load messages configuration.", ex);
             return false;
         }
     }

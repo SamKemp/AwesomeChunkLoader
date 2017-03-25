@@ -5,7 +5,6 @@ import ca.shadownode.betterchunkloader.sponge.data.ChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.PlayerData;
 import ca.shadownode.betterchunkloader.sponge.menu.ChunkLoaderMenu;
 import ca.shadownode.betterchunkloader.sponge.utils.Utilities;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,7 +44,7 @@ public class PlayerListener {
         Player player = event.getTargetEntity();
         Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(player.getUniqueId());
         if (playerData.isPresent()) {
-            playerData.get().setLastOnline(new Timestamp(System.currentTimeMillis()));
+            playerData.get().setLastOnline(System.currentTimeMillis());
             plugin.getDataStore().updatePlayerData(playerData.get());
             List<ChunkLoader> clList = plugin.getDataStore().getChunkLoadersByOwner(player.getUniqueId());
             clList.stream().filter((chunkLoader) -> (!chunkLoader.isAlwaysOn() && chunkLoader.isLoadable())).forEachOrdered((chunkLoader) -> {
@@ -60,7 +59,7 @@ public class PlayerListener {
         Player player = event.getTargetEntity();
         Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(player.getUniqueId());
         if (playerData.isPresent()) {
-            playerData.get().setLastOnline(new Timestamp(System.currentTimeMillis()));
+            playerData.get().setLastOnline(System.currentTimeMillis());
             plugin.getDataStore().updatePlayerData(playerData.get());
             List<ChunkLoader> clList = plugin.getDataStore().getChunkLoadersByOwner(player.getUniqueId());
             clList.stream().filter((chunkLoader) -> (!chunkLoader.isAlwaysOn() && chunkLoader.isLoadable())).forEachOrdered((chunkLoader) -> {
@@ -93,7 +92,7 @@ public class PlayerListener {
                             clickedBlock.getLocation().get().getBlockPosition(),
                             clickedBlock.getLocation().get().getChunkPosition(),
                             -1,
-                            new Timestamp(System.currentTimeMillis()),
+                            System.currentTimeMillis(),
                             clickedBlock.getState().getType().equals(BlockTypes.DIAMOND_BLOCK)
                     ));
                 }
@@ -203,6 +202,7 @@ public class PlayerListener {
                         playerData.get().addOnlineChunksAmount(chunkLoader.getChunks());
                     }
                     plugin.getDataStore().removeChunkLoader(chunkLoader);
+                    plugin.getChunkManager().unloadChunkLoader(chunkLoader);
                     player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.removed));
                     return;
                 }
@@ -232,9 +232,10 @@ public class PlayerListener {
                             }
                         }
                         chunkLoader.setRadius(radius.get());
-                        chunkLoader.setCreation(new Timestamp(System.currentTimeMillis()));
+                        chunkLoader.setCreation(System.currentTimeMillis());
                         plugin.getLogger().info(player.getName() + " made a new chunk loader at " + Utilities.getReadableLocation(chunkLoader.getWorld(), chunkLoader.getLocation()) + " with radius " + chunkLoader.getRadius());
                         plugin.getDataStore().addChunkLoader(chunkLoader);
+                        plugin.getChunkManager().loadChunkLoader(chunkLoader);
                         player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.created));
                         break;
                     } else {
@@ -255,6 +256,8 @@ public class PlayerListener {
                         plugin.getLogger().info(player.getName() + " edited " + playerData.get().getName() + "'s chunk loader at " + Utilities.getReadableLocation(chunkLoader.getWorld(), chunkLoader.getLocation()) + " radius from " + chunkLoader.getRadius() + " to " + radius.get());
                         chunkLoader.setRadius(radius.get());
                         plugin.getDataStore().updateChunkLoader(chunkLoader);
+                        plugin.getChunkManager().unloadChunkLoader(chunkLoader);
+                        plugin.getChunkManager().loadChunkLoader(chunkLoader);
                         player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.updated, args));
                         break;
                     }

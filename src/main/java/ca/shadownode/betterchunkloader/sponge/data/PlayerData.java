@@ -13,19 +13,19 @@ public class PlayerData {
 
     private String name;
     private UUID uuid;
-    private Timestamp lastOnline;
+    private Long lastOnline;
     private Integer onlineChunksAmount;
     private Integer alwaysOnChunksAmount;
 
     public PlayerData(String name, UUID uuid) {
         this.name = name;
         this.uuid = uuid;
-        this.lastOnline = new Timestamp(System.currentTimeMillis());
+        this.lastOnline = System.currentTimeMillis();
         this.onlineChunksAmount = BetterChunkLoader.getInstance().getConfig().getCore().chunkLoader.defaultOnline;
         this.alwaysOnChunksAmount = BetterChunkLoader.getInstance().getConfig().getCore().chunkLoader.defaultAlwaysOn;
     }
 
-    public PlayerData(String name, UUID uuid, Timestamp lastOnline, Integer onlineChunksAmount, Integer alwaysOnChunksAmount) {
+    public PlayerData(String name, UUID uuid, Long lastOnline, Integer onlineChunksAmount, Integer alwaysOnChunksAmount) {
         this.name = name;
         this.uuid = uuid;
         this.lastOnline = lastOnline;
@@ -51,12 +51,12 @@ public class PlayerData {
         this.uuid = uuid;
     }
     
-    public Timestamp getLastOnline() {
+    public Long getLastOnline() {
         return lastOnline;
     }
     
     @XmlAttribute(name = "lastOnline")
-    public void setLastOnline(Timestamp lastOnline) {
+    public void setLastOnline(Long lastOnline) {
         this.lastOnline = lastOnline;
     }
     

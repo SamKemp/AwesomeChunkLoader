@@ -48,13 +48,13 @@ public final class MYSQLDataStore implements IDataStore {
                     + "location VARCHAR(1000) NOT NULL, "
                     + "chunk VARCHAR(1000) NOT NULL, "
                     + "r TINYINT(3) UNSIGNED NOT NULL, "
-                    + "creation TIMESTAMP NOT NULL, "
+                    + "creation BIGINT(20) NOT NULL, "
                     + "alwaysOn BOOLEAN NOT NULL, "
                     + "UNIQUE KEY uuid (uuid));");
             connection.createStatement().executeUpdate("CREATE TABLE IF NOT EXISTS bcl_playerdata ("
                     + "username VARCHAR(16) NOT NULL,"
                     + "uuid VARCHAR(36) NOT NULL, "
-                    + "lastOnline TIMESTAMP NOT NULL, "
+                    + "lastOnline BIGINT(20) NOT NULL, "
                     + "onlineAmount SMALLINT(6) UNSIGNED NOT NULL, "
                     + "alwaysOnAmount SMALLINT(6) UNSIGNED NOT NULL, "
                     + "UNIQUE KEY uuid (uuid));");
@@ -85,7 +85,7 @@ public final class MYSQLDataStore implements IDataStore {
                             optLocation.get(),
                             optVector.get(),
                             rs.getInt("r"),
-                            rs.getTimestamp("creation"),
+                            rs.getLong("creation"),
                             rs.getBoolean("alwaysOn")
                     );
                     clList.add(chunkLoader);
@@ -115,7 +115,7 @@ public final class MYSQLDataStore implements IDataStore {
                             optLocation.get(),
                             optVector.get(),
                             rs.getInt("r"),
-                            rs.getTimestamp("creation"),
+                            rs.getLong("creation"),
                             rs.getBoolean("alwaysOn")
                     );
                     clList.add(chunkLoader);
@@ -145,7 +145,7 @@ public final class MYSQLDataStore implements IDataStore {
                             optLocation.get(),
                             optVector.get(),
                             rs.getInt("r"),
-                            rs.getTimestamp("creation"),
+                            rs.getLong("creation"),
                             rs.getBoolean("alwaysOn")
                     );
                     clList.add(chunkLoader);
@@ -175,7 +175,7 @@ public final class MYSQLDataStore implements IDataStore {
                             optLocation.get(),
                             optVector.get(),
                             rs.getInt("r"),
-                            rs.getTimestamp("creation"),
+                            rs.getLong("creation"),
                             rs.getBoolean("alwaysOn")
                     );
                     clList.add(chunkLoader);
@@ -225,7 +225,7 @@ public final class MYSQLDataStore implements IDataStore {
                 statement.setObject(4, locationStr.get());
                 statement.setObject(5, vectorStr.get());
                 statement.setInt(6, chunkLoader.getRadius());
-                statement.setTimestamp(7, chunkLoader.getCreation());
+                statement.setLong(7, chunkLoader.getCreation());
                 statement.setBoolean(8, chunkLoader.isAlwaysOn());
                 statement.executeUpdate();
             }
@@ -265,7 +265,6 @@ public final class MYSQLDataStore implements IDataStore {
         }
     }
 
-
     @Override
     public void updateChunkLoader(ChunkLoader chunkLoader) {
         try (Connection connection = getConnection()) {
@@ -279,7 +278,7 @@ public final class MYSQLDataStore implements IDataStore {
                 statement.setObject(4, locationStr.get());
                 statement.setObject(5, vectorStr.get());
                 statement.setInt(6, chunkLoader.getRadius());
-                statement.setTimestamp(7, chunkLoader.getCreation());
+                statement.setLong(7, chunkLoader.getCreation());
                 statement.setBoolean(8, chunkLoader.isAlwaysOn());
                 statement.executeUpdate();
             }
@@ -288,7 +287,7 @@ public final class MYSQLDataStore implements IDataStore {
             plugin.getLogger().error("MYSQL: Error updating chunk loader in database.", ex);
         }
     }
-    
+
     @Override
     public Optional<PlayerData> getPlayerData(UUID playerUUID) {
         try (Connection connection = getConnection()) {
@@ -297,7 +296,7 @@ public final class MYSQLDataStore implements IDataStore {
                 return Optional.ofNullable(new PlayerData(
                         rs.getString("username"),
                         UUID.fromString(rs.getString("uuid")),
-                        rs.getTimestamp("lastOnline"),
+                        rs.getLong("lastOnline"),
                         rs.getInt("onlineAmount"),
                         rs.getInt("alwaysOnAmount")
                 ));
@@ -309,6 +308,7 @@ public final class MYSQLDataStore implements IDataStore {
                         playerUUID
                 ));
             }
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error refreshing Player data.", ex);
         }
@@ -323,11 +323,12 @@ public final class MYSQLDataStore implements IDataStore {
                 return Optional.ofNullable(new PlayerData(
                         rs.getString("username"),
                         UUID.fromString(rs.getString("uuid")),
-                        rs.getTimestamp("lastOnline"),
+                        rs.getLong("lastOnline"),
                         rs.getInt("onlineAmount"),
                         rs.getInt("alwaysOnAmount")
                 ));
             }
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error getting player data for: " + playerName, ex);
         }
@@ -340,10 +341,11 @@ public final class MYSQLDataStore implements IDataStore {
             PreparedStatement statement = connection.prepareStatement("REPLACE INTO bcl_playerdata VALUES (?, ?, ?, ?, ?)");
             statement.setString(1, playerData.getName());
             statement.setString(2, playerData.getUnqiueId().toString());
-            statement.setTimestamp(3, playerData.getLastOnline());
+            statement.setLong(3, playerData.getLastOnline());
             statement.setInt(4, playerData.getOnlineChunksAmount());
             statement.setInt(5, playerData.getAlwaysOnChunksAmount());
             statement.executeUpdate();
+            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error updating player..", ex);
         }
@@ -358,11 +360,12 @@ public final class MYSQLDataStore implements IDataStore {
                 playerData.add(new PlayerData(
                         rs.getString("username"),
                         UUID.fromString(rs.getString("uuid")),
-                        rs.getTimestamp("lastOnline"),
+                        rs.getLong("lastOnline"),
                         rs.getInt("onlineAmount"),
                         rs.getInt("alwaysOnAmount")
                 ));
             }
+            connection.close();
             return playerData;
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error getting all player data.", ex);
@@ -385,6 +388,7 @@ public final class MYSQLDataStore implements IDataStore {
     public Optional<HikariDataSource> getDataSource() {
         HikariDataSource ds = new HikariDataSource();
         ds.setMaximumPoolSize(100);
+        ds.setMaxLifetime(5000);
         ds.setDriverClassName("org.mariadb.jdbc.Driver");
         ds.setJdbcUrl("jdbc:mariadb://"
                 + plugin.getConfig().getCore().dataStore.mysql.hostname

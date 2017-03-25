@@ -16,6 +16,7 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.game.state.GameStoppedServerEvent;
 import org.spongepowered.api.plugin.Plugin;
+import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.service.pagination.PaginationService;
 
 @Plugin(id = "betterchunkloader")
@@ -32,6 +33,9 @@ public class BetterChunkLoader {
 
     @Inject
     private Game game;
+    
+    @Inject
+    public PluginContainer plugincontainer;
 
     @Inject
     @ConfigDir(sharedRoot = false)
@@ -56,11 +60,11 @@ public class BetterChunkLoader {
                 chunkManager = new ChunkManager(this);
 
                 int count = 0;
-                count = getDataStore().getChunkLoaders().stream().filter((chunkLoader) -> (chunkLoader.isAlwaysOn() && chunkLoader.isLoadable())).map((chunkLoader) -> {
+                count = getDataStore().getChunkLoaders().stream().filter((chunkLoader) -> (chunkLoader.isLoadable())).map((chunkLoader) -> {
                     getChunkManager().loadChunkLoader(chunkLoader);
                     return chunkLoader;
                 }).map((_item) -> 1).reduce(count, Integer::sum);
-                getLogger().info("Activated " + count + " offline chunk loaders.");
+                getLogger().info("Activated " + count + " chunk loaders.");
 
                 getLogger().info("Registering Listeners...");
                 new PlayerListener(this).register();

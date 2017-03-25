@@ -6,6 +6,9 @@ import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 @ConfigSerializable
 public class CoreConfig {
 
+    @Setting("Debug")
+    public Boolean debug = false;
+    
     @Setting("DataStore")
     public DataStore dataStore = new DataStore();
     
@@ -68,5 +71,8 @@ public class CoreConfig {
         
         @Setting("MaxAlwaysOn")
         public Integer maxAlwaysOn = 300;
+        
+        @Setting(value = "Expiry", comment = "Max amount in hours the owner can be offline before considering this loader 'Expired'")
+        public Integer expiry = 72;
     }
 }

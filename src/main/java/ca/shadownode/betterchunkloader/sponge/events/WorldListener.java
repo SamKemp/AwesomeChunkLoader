@@ -61,6 +61,7 @@ public class WorldListener {
                 }
                 plugin.getDataStore().updatePlayerData(playerData.get());
                 plugin.getDataStore().removeChunkLoader(chunkLoader.get());
+                plugin.getChunkManager().unloadChunkLoader(chunkLoader.get());
 
                 HashMap<String, String> args = new HashMap<>();
                 args.put("player", player.getName());
