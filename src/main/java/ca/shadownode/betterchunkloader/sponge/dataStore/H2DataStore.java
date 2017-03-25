@@ -62,6 +62,12 @@ public final class H2DataStore implements IDataStore {
             if (hasColumn("bcl_playerdata", "offlineAmount")) {
                 connection.createStatement().execute("ALTER TABLE `bcl_playerdata` CHANGE `offlineAmount` `alwaysOnAmount` SMALLINT(6);");
             }
+            if (hasColumn("bcl_playerdata", "lastOnline")) {
+                connection.createStatement().execute("ALTER TABLE `bcl_playerdata` CHANGE `lastOnline` `lastOnline` BIGINT(20);");
+            }
+            if (hasColumn("bcl_chunkloaders", "lastOnline")) {
+                connection.createStatement().execute("ALTER TABLE `bcl_chunkloaders` CHANGE `creation` `creation` BIGINT(20);");
+            }
             connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("Unable to create tables", ex);

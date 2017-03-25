@@ -25,7 +25,7 @@ sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
 group = 'ca.shadownode.betterchunkloader'
-version = '3.4.1-SNAPSHOT'
+version = '3.4.2-SNAPSHOT'
 
 minecraft {
     forgeVersion = "1.10.2-12.18.3.2221"
