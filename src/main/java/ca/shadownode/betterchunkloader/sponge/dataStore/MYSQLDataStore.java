@@ -64,7 +64,7 @@ public final class MYSQLDataStore implements IDataStore {
             if (hasColumn("bcl_playerdata", "lastOnline")) {
                 connection.createStatement().execute("ALTER TABLE `bcl_playerdata` CHANGE `lastOnline` `lastOnline` BIGINT(20);");
             }
-            if (hasColumn("bcl_chunkloaders", "lastOnline")) {
+            if (hasColumn("bcl_chunkloaders", "creation")) {
                 connection.createStatement().execute("ALTER TABLE `bcl_chunkloaders` CHANGE `creation` `creation` BIGINT(20);");
             }
             connection.close();
