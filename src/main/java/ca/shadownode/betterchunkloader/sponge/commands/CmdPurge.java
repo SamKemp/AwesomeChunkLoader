@@ -9,7 +9,6 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class CmdPurge implements CommandExecutor {

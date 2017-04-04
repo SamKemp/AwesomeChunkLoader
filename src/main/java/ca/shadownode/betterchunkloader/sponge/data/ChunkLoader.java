@@ -1,7 +1,6 @@
 package ca.shadownode.betterchunkloader.sponge.data;
 
 import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
-import java.sql.Timestamp;
 import java.util.UUID;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -10,7 +9,6 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.flowpowered.math.vector.Vector3i;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockState;
@@ -132,15 +130,15 @@ public final class ChunkLoader {
     }
 
     public Boolean canEdit(Player player) {
-        if (player.getUniqueId() == getOwner()) {
+        if (player.getUniqueId().equals(owner)) {
             return true;
         } else {
-            return player.hasPermission("betterchunkloader.chunkloader") || player.hasPermission("betterchunkloader.chunkloader.edit");
+            return player.hasPermission("betterchunkloader.chunkloader.edit");
         }
     }
 
     public Boolean canCreate(Player player) {
-        return player.hasPermission("betterchunkloader.chunkloader") || player.hasPermission("betterchunkloader.chunkloader.create") || player.hasPermission("betterchunkloader.chunkloader.create." + (isAlwaysOn() ? "offline" : "online"));
+        return player.hasPermission("betterchunkloader.chunkloader.create") || player.hasPermission("betterchunkloader.chunkloader.create." + (isAlwaysOn() ? "alwayson" : "online"));
     }
 
     public Boolean blockCheck() {

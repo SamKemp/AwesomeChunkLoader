@@ -67,7 +67,6 @@ public final class MYSQLDataStore implements IDataStore {
             if (hasColumn("bcl_chunkloaders", "creation")) {
                 connection.createStatement().execute("ALTER TABLE `bcl_chunkloaders` CHANGE `creation` `creation` BIGINT(20);");
             }
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("Unable to create tables", ex);
             return false;
@@ -97,7 +96,6 @@ public final class MYSQLDataStore implements IDataStore {
                     clList.add(chunkLoader);
                 }
             }
-            connection.close();
             return clList;
         } catch (SQLException ex) {
             plugin.getLogger().info("MYSQL: Couldn't read all chunk loaders from database.", ex);
@@ -127,7 +125,6 @@ public final class MYSQLDataStore implements IDataStore {
                     clList.add(chunkLoader);
                 }
             }
-            connection.close();
             return clList;
         } catch (SQLException ex) {
             plugin.getLogger().info("MYSQL: Couldn't read chunk loaders from database for world: " + world.getName(), ex);
@@ -157,7 +154,6 @@ public final class MYSQLDataStore implements IDataStore {
                     clList.add(chunkLoader);
                 }
             }
-            connection.close();
             return clList;
         } catch (SQLException ex) {
             plugin.getLogger().info("MYSQL: Couldn't read chunk loaders from database by type: " + (isAlwaysOn ? "Always On" : "Online Only"), ex);
@@ -187,7 +183,6 @@ public final class MYSQLDataStore implements IDataStore {
                     clList.add(chunkLoader);
                 }
             }
-            connection.close();
             return clList;
         } catch (SQLException ex) {
             plugin.getLogger().info("MYSQL: Couldn't read chunk loaders from database for owner: " + ownerUUID.toString(), ex);
@@ -235,7 +230,6 @@ public final class MYSQLDataStore implements IDataStore {
                 statement.setBoolean(8, chunkLoader.isAlwaysOn());
                 statement.executeUpdate();
             }
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error adding ChunkLoader", ex);
         }
@@ -245,7 +239,6 @@ public final class MYSQLDataStore implements IDataStore {
     public void removeChunkLoader(ChunkLoader chunkLoader) {
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE uuid = '" + chunkLoader.getUniqueId() + "' LIMIT 1");
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error removing ChunkLoader.", ex);
         }
@@ -255,7 +248,6 @@ public final class MYSQLDataStore implements IDataStore {
     public void removeAllChunkLoaders(UUID playerUUID) {
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE owner = '" + playerUUID.toString() + "'");
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error removing ChunkLoaders.", ex);
         }
@@ -265,7 +257,6 @@ public final class MYSQLDataStore implements IDataStore {
     public void removeAllChunkLoaders(World world) {
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE owner = '" + world.getUniqueId().toString() + "'");
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error removing ChunkLoaders.", ex);
         }
@@ -288,7 +279,6 @@ public final class MYSQLDataStore implements IDataStore {
                 statement.setBoolean(8, chunkLoader.isAlwaysOn());
                 statement.executeUpdate();
             }
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error updating chunk loader in database.", ex);
         }
@@ -314,7 +304,6 @@ public final class MYSQLDataStore implements IDataStore {
                         playerUUID
                 ));
             }
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error refreshing Player data.", ex);
         }
@@ -334,7 +323,6 @@ public final class MYSQLDataStore implements IDataStore {
                         rs.getInt("alwaysOnAmount")
                 ));
             }
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error getting player data for: " + playerName, ex);
         }
@@ -351,7 +339,6 @@ public final class MYSQLDataStore implements IDataStore {
             statement.setInt(4, playerData.getOnlineChunksAmount());
             statement.setInt(5, playerData.getAlwaysOnChunksAmount());
             statement.executeUpdate();
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error updating player..", ex);
         }
@@ -371,7 +358,6 @@ public final class MYSQLDataStore implements IDataStore {
                         rs.getInt("alwaysOnAmount")
                 ));
             }
-            connection.close();
             return playerData;
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error getting all player data.", ex);
@@ -383,7 +369,6 @@ public final class MYSQLDataStore implements IDataStore {
         try (Connection connection = getConnection()) {
             DatabaseMetaData md = connection.getMetaData();
             ResultSet rs = md.getColumns(null, null, tableName, columnName);
-            connection.close();
             return rs.next();
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error checking if column exists.", ex);
@@ -393,8 +378,7 @@ public final class MYSQLDataStore implements IDataStore {
 
     public Optional<HikariDataSource> getDataSource() {
         HikariDataSource ds = new HikariDataSource();
-        ds.setMaximumPoolSize(100);
-        ds.setMaxLifetime(5000);
+        ds.setMaximumPoolSize(50);
         ds.setDriverClassName("org.mariadb.jdbc.Driver");
         ds.setJdbcUrl("jdbc:mariadb://"
                 + plugin.getConfig().getCore().dataStore.mysql.hostname

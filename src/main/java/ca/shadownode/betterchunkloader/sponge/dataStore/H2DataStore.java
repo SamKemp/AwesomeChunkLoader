@@ -68,7 +68,6 @@ public final class H2DataStore implements IDataStore {
             if (hasColumn("bcl_chunkloaders", "lastOnline")) {
                 connection.createStatement().execute("ALTER TABLE `bcl_chunkloaders` CHANGE `creation` `creation` BIGINT(20);");
             }
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("Unable to create tables", ex);
             return false;
@@ -98,7 +97,6 @@ public final class H2DataStore implements IDataStore {
                     clList.add(chunkLoader);
                 }
             }
-            connection.close();
             return clList;
         } catch (SQLException ex) {
             plugin.getLogger().info("H2: Couldn't read chunk loaders data from H2 database.", ex);
@@ -128,7 +126,6 @@ public final class H2DataStore implements IDataStore {
                     clList.add(chunkLoader);
                 }
             }
-            connection.close();
             return clList;
         } catch (SQLException ex) {
             plugin.getLogger().info("H2: Couldn't read chunk loaders data from H2 database.", ex);
@@ -158,7 +155,6 @@ public final class H2DataStore implements IDataStore {
                     clList.add(chunkLoader);
                 }
             }
-            connection.close();
             return clList;
         } catch (SQLException ex) {
             plugin.getLogger().info("H2: Couldn't read chunk loaders data from H2 database.", ex);
@@ -188,7 +184,6 @@ public final class H2DataStore implements IDataStore {
                     clList.add(chunkLoader);
                 }
             }
-            connection.close();
             return clList;
         } catch (SQLException ex) {
             plugin.getLogger().info("H2: Couldn't read chunk loaders data from H2 database.", ex);
@@ -236,7 +231,6 @@ public final class H2DataStore implements IDataStore {
                 statement.setBoolean(8, chunkLoader.isAlwaysOn());
                 statement.executeUpdate();
             }
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error adding ChunkLoader", ex);
         }
@@ -246,7 +240,6 @@ public final class H2DataStore implements IDataStore {
     public void removeChunkLoader(ChunkLoader chunkLoader) {
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE uuid = '" + chunkLoader.getUniqueId() + "' LIMIT 1");
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error removing ChunkLoader.", ex);
         }
@@ -269,7 +262,6 @@ public final class H2DataStore implements IDataStore {
                 statement.setBoolean(8, chunkLoader.isAlwaysOn());
                 statement.executeUpdate();
             }
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error updating chunk loader in database.", ex);
         }
@@ -279,7 +271,6 @@ public final class H2DataStore implements IDataStore {
     public void removeAllChunkLoaders(UUID owner) {
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE owner = '" + owner.toString() + "'");
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error removing ChunkLoaders.", ex);
         }
@@ -289,7 +280,6 @@ public final class H2DataStore implements IDataStore {
     public void removeAllChunkLoaders(World world) {
         try (Connection connection = getConnection()) {
             connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE world = '" + world.getUniqueId().toString() + "'");
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error removing ChunkLoaders.", ex);
         }
@@ -315,7 +305,6 @@ public final class H2DataStore implements IDataStore {
                         playerUUID
                 ));
             }
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error refreshing Player data.", ex);
         }
@@ -335,7 +324,6 @@ public final class H2DataStore implements IDataStore {
                         rs.getInt("alwaysOnAmount")
                 ));
             }
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error getting player data for: " + playerName, ex);
         }
@@ -352,7 +340,6 @@ public final class H2DataStore implements IDataStore {
             statement.setInt(4, playerData.getOnlineChunksAmount());
             statement.setInt(5, playerData.getAlwaysOnChunksAmount());
             statement.executeUpdate();
-            connection.close();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error updating player data for: " + playerData.getName(), ex);
         }
@@ -372,7 +359,6 @@ public final class H2DataStore implements IDataStore {
                         rs.getInt("alwaysOnAmount")
                 ));
             }
-            connection.close();
             return playerData;
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error getting all player data.", ex);
@@ -384,7 +370,6 @@ public final class H2DataStore implements IDataStore {
         try (Connection connection = getConnection()) {
             DatabaseMetaData md = connection.getMetaData();
             ResultSet rs = md.getColumns(null, null, tableName, columnName);
-            connection.close();
             return rs.next();
         } catch (SQLException ex) {
             plugin.getLogger().error("H2: Error checking if column exists.", ex);
@@ -394,8 +379,7 @@ public final class H2DataStore implements IDataStore {
 
     public Optional<HikariDataSource> getDataSource() {
         HikariDataSource ds = new HikariDataSource();
-        ds.setMaximumPoolSize(100);
-        ds.setMaxLifetime(5000);
+        ds.setMaximumPoolSize(50);
         ds.setDriverClassName("org.h2.Driver");
         ds.setJdbcUrl("jdbc:h2://" + new File(plugin.configDir, plugin.getConfig().getCore().dataStore.h2.file).getAbsolutePath());
         ds.setAutoCommit(true);

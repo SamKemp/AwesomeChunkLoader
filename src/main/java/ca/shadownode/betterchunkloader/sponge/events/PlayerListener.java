@@ -217,7 +217,7 @@ public class PlayerListener {
                     args.put("available", String.valueOf(available));
 
                     if (chunkLoader.getRadius() == -1) {
-                        if (!player.hasPermission("betterchunkloader.chunkloader") || !player.hasPermission("betterchunkloader.chunkloader.unlimitedchunks")) {
+                        if (!player.hasPermission("betterchunkloader.chunkloader.unlimitedchunks")) {
                             if (chunks.get() > available) {
                                 args.put("needed", String.valueOf(chunks.get()));
                                 player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.notEnough, args));
@@ -239,7 +239,7 @@ public class PlayerListener {
                         player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.created));
                         break;
                     } else {
-                        if (!player.hasPermission("betterchunkloader.chunkloader") || !player.hasPermission("betterchunkloader.chunkloader.unlimitedchunks")) {
+                        if (!player.hasPermission("betterchunkloader.chunkloader.unlimitedchunks")) {
                             if (Math.subtractExact(chunks.get(), chunkLoader.getChunks()) > available) {
                                 args.put("needed", String.valueOf(Math.subtractExact(chunks.get(), chunkLoader.getChunks())));
                                 player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.notEnough, args));

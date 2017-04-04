@@ -25,10 +25,12 @@ public class CmdBalance implements CommandExecutor {
     public CommandResult execute(CommandSource sender, CommandContext context) throws CommandException {
         Optional<String> playerName = context.getOne("player");
         if (playerName.isPresent()) {
-            if (chunksInfo(sender, playerName.get())) {
-                return CommandResult.success();
-            } else {
-                sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.noPlayerExists));
+            if (sender.hasPermission("betterchunkloader.commands.balance.others")) {
+                if (chunksInfo(sender, playerName.get())) {
+                    return CommandResult.success();
+                } else {
+                    sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.noPlayerExists));
+                }
             }
         } else {
             if (sender instanceof Player) {

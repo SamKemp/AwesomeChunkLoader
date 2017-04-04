@@ -1,7 +1,6 @@
 package ca.shadownode.betterchunkloader.sponge.data;
 
 import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
-import java.sql.Timestamp;
 import java.util.UUID;
 
 import javax.xml.bind.annotation.XmlAttribute;
