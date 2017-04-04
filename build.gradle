@@ -25,11 +25,11 @@ sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
 group = 'ca.shadownode.betterchunkloader'
-version = '3.4.4-SNAPSHOT'
+version = '3.4.5-SNAPSHOT'
 
 minecraft {
-    forgeVersion = "1.10.2-12.18.3.2221"
-    mappings = "snapshot_20160628"
+    forgeVersion = "1.10.2-12.18.3.2254"
+    mappings = "stable_29"
 }
 
 sponge {
@@ -45,11 +45,6 @@ sponge {
 }
 
 repositories {
-    mavenCentral();
-    maven {
-        name = "forge"
-        url = "http://files.minecraftforge.net/maven"
-    }
     maven {
         name = 'sponge'
         url = 'http://repo.spongepowered.org/maven'

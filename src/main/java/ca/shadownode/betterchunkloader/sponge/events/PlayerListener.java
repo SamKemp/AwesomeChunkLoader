@@ -201,6 +201,7 @@ public class PlayerListener {
                     } else {
                         playerData.get().addOnlineChunksAmount(chunkLoader.getChunks());
                     }
+                    plugin.getDataStore().updatePlayerData(playerData.get());
                     plugin.getDataStore().removeChunkLoader(chunkLoader);
                     plugin.getChunkManager().unloadChunkLoader(chunkLoader);
                     player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.removed));
