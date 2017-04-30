@@ -14,7 +14,7 @@ import org.spongepowered.api.Game;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
-import org.spongepowered.api.event.game.state.GameStoppedServerEvent;
+import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.service.pagination.PaginationService;
@@ -79,7 +79,7 @@ public class BetterChunkLoader {
     }
 
     @Listener
-    public void onDisable(GameStoppedServerEvent event) {
+    public void onServerStopping(GameStoppingServerEvent event) {
         if (getDataStore() != null) {
             getDataStore().getChunkLoaders().stream().forEachOrdered((cl) -> {
                 getChunkManager().unloadChunkLoader(cl);

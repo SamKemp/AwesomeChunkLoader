@@ -10,19 +10,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.WorldServer;
+import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.ForgeChunkManager;
+import net.minecraftforge.common.ForgeChunkManager.Ticket;
+import net.minecraftforge.common.ForgeChunkManager.Type;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.world.Chunk;
-import org.spongepowered.api.world.ChunkTicketManager;
-import org.spongepowered.api.world.ChunkTicketManager.LoadingTicket;
 import org.spongepowered.api.world.World;
 
 public class ChunkManager {
 
     private final BetterChunkLoader plugin;
-    private final Optional<ChunkTicketManager> ticketManager;
 
-    private final HashMap<UUID, Optional<LoadingTicket>> tickets = new HashMap<>();
+    private final HashMap<UUID, Optional<Ticket>> tickets = new HashMap<>();
 
     public ChunkManager(BetterChunkLoader plugin) {
         this.plugin = plugin;
@@ -39,21 +41,10 @@ public class ChunkManager {
             ticketConstraints.put("betterchunkloader", Integer.MAX_VALUE);
             chunkConstraints.put("betterchunkloader", Integer.MAX_VALUE);
 
+            ForgeChunkManager.setForcedChunkLoadingCallback(plugin, new ChunkLoadingCallback(plugin));
+
         } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException ex) {
             plugin.getLogger().debug("ChunkManager failed to force chunk constraints", ex);
-        }
-        ticketManager = Sponge.getServiceManager().provide(ChunkTicketManager.class);
-        if (ticketManager.isPresent()) {
-            ticketManager.get().registerCallback(plugin, new ChunkLoadingCallback(plugin));
-            if (plugin.getConfig().getCore().debug) {
-                System.out.println("MaxTickets: " + ticketManager.get().getMaxTickets(plugin.plugincontainer));
-                Sponge.getServer().getWorlds().stream().map((world) -> {
-                    System.out.println("AvailTicket : " + world.getName() + ":" + ticketManager.get().getAvailableTickets(plugin.plugincontainer, world));
-                    return world;
-                }).forEachOrdered((world) -> {
-                    System.out.println("ForcedChunks : " + world.getName() + ":" + ticketManager.get().getForcedChunks(world));
-                });
-            }
         }
     }
 
@@ -89,6 +80,15 @@ public class ChunkManager {
         return true;
     }
 
+    public Optional<WorldServer> getWorld(String worldName) {
+        for (WorldServer world : DimensionManager.getWorlds()) {
+            if (world.getWorldInfo().getWorldName().equalsIgnoreCase(worldName)) {
+                return Optional.of(world);
+            }
+        }
+        return Optional.empty();
+    }
+
     /**
      *
      * Loads chunk using old or new ticket.
@@ -98,18 +98,19 @@ public class ChunkManager {
      * @return
      */
     public boolean loadChunk(ChunkLoader chunkLoader, Chunk chunk) {
-        if (!ticketManager.isPresent()) {
+        Optional<WorldServer> world = this.getWorld(chunk.getWorld().getName());
+        if (!world.isPresent()) {
             return false;
         }
-        Optional<LoadingTicket> ticket;
+        Optional<Ticket> ticket;
         if (tickets.containsKey(chunkLoader.getUniqueId()) && tickets.get(chunkLoader.getUniqueId()).isPresent()) {
             ticket = tickets.get(chunkLoader.getUniqueId());
         } else {
-            ticket = ticketManager.get().createTicket(plugin, chunk.getWorld());
+            ticket = Optional.of(ForgeChunkManager.requestTicket(plugin, world.get(), Type.NORMAL));
             tickets.put(chunkLoader.getUniqueId(), ticket);
         }
-        if (ticket.isPresent() && chunk != null) {
-            ticket.get().forceChunk(chunk.getPosition());
+        if (ticket.isPresent()) {
+            ForgeChunkManager.forceChunk(ticket.get(), new ChunkPos(chunk.getPosition().getX(), chunk.getPosition().getZ()));
             if (plugin.getConfig().getCore().debug) {
                 System.out.println("LOAD");
                 System.out.println("CList: " + Arrays.toString(ticket.get().getChunkList().toArray()));
@@ -127,13 +128,10 @@ public class ChunkManager {
      * @return
      */
     public boolean unloadChunk(ChunkLoader chunkLoader, Chunk chunk) {
-        if (!ticketManager.isPresent()) {
-            return false;
-        }
         if (tickets.containsKey(chunkLoader.getUniqueId())) {
-            Optional<LoadingTicket> ticket = tickets.get(chunkLoader.getUniqueId());
+            Optional<Ticket> ticket = tickets.get(chunkLoader.getUniqueId());
             if (ticket.isPresent() && chunk != null) {
-                ticket.get().unforceChunk(chunk.getPosition());
+                ForgeChunkManager.unforceChunk(ticket.get(), new ChunkPos(chunk.getPosition().getX(), chunk.getPosition().getZ()));
                 if (plugin.getConfig().getCore().debug) {
                     System.out.println("UNLOAD");
                     System.out.println("CList: " + Arrays.toString(ticket.get().getChunkList().toArray()));
@@ -147,15 +145,8 @@ public class ChunkManager {
     /*
         Gets all tickets controlled by this library.
      */
-    public Map<UUID, Optional<LoadingTicket>> getTickets() {
+    public Map<UUID, Optional<Ticket>> getTickets() {
         return tickets;
-    }
-
-    /*
-       Gets Sponge ChunkTicketManager instance.
-     */
-    public Optional<ChunkTicketManager> getTicketManager() {
-        return ticketManager;
     }
 
     public List<Chunk> getChunks(Integer radius, Chunk chunk) {

@@ -1,23 +1,22 @@
 package ca.shadownode.betterchunkloader.sponge.events;
 
-
 import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
-import com.google.common.collect.ImmutableList;
-import org.spongepowered.api.world.ChunkTicketManager;
-import org.spongepowered.api.world.ChunkTicketManager.Callback;
-import org.spongepowered.api.world.World;
+import java.util.List;
+import net.minecraft.world.World;
+import net.minecraftforge.common.ForgeChunkManager.LoadingCallback;
+import net.minecraftforge.common.ForgeChunkManager.Ticket;
 
-public class ChunkLoadingCallback implements Callback {
+public class ChunkLoadingCallback implements LoadingCallback {
 
     private final BetterChunkLoader plugin;
-    
+
     public ChunkLoadingCallback(BetterChunkLoader plugin) {
         this.plugin = plugin;
     }
 
     @Override
-    public void onLoaded(ImmutableList<ChunkTicketManager.LoadingTicket> il, World world) {
-        
+    public void ticketsLoaded(List<Ticket> tickets, World world) {
+        // discard all tickets
     }
 
 }
