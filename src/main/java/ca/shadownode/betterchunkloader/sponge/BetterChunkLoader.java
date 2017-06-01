@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.spongepowered.api.Game;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
 import org.spongepowered.api.plugin.Plugin;
@@ -33,7 +34,7 @@ public class BetterChunkLoader {
 
     @Inject
     private Game game;
-    
+
     @Inject
     public PluginContainer plugincontainer;
 
@@ -45,28 +46,24 @@ public class BetterChunkLoader {
     public GuiceObjectMapperFactory factory;
 
     @Listener
-    public void onServerStart(GameStartedServerEvent event) {
+    public void onServerAboutStart(GameAboutToStartServerEvent event) {
         plugin = this;
 
         config = new Configuration(this);
+
         if (config.loadCore() && config.loadMessages()) {
             dataStoreManager = new DataStoreManager(this);
 
             if (dataStoreManager.load()) {
+                getLogger().info("Connecting to datastore.");
 
                 getLogger().info("Loaded " + getDataStore().getChunkLoaders().size() + " chunkloaders.");
                 getLogger().info("Loaded " + getDataStore().getPlayersData().size() + " players.");
 
+                getLogger().info("Registering Listeners...");
+
                 chunkManager = new ChunkManager(this);
 
-                int count = 0;
-                count = getDataStore().getChunkLoaders().stream().filter((chunkLoader) -> (chunkLoader.isLoadable())).map((chunkLoader) -> {
-                    getChunkManager().loadChunkLoader(chunkLoader);
-                    return chunkLoader;
-                }).map((_item) -> 1).reduce(count, Integer::sum);
-                getLogger().info("Activated " + count + " chunk loaders.");
-
-                getLogger().info("Registering Listeners...");
                 new PlayerListener(this).register();
                 new WorldListener(this).register();
                 new CommandManager(this).register();
@@ -76,6 +73,16 @@ public class BetterChunkLoader {
                 getLogger().error("Unable to load a datastore please check your Console/Config!");
             }
         }
+    }
+
+    @Listener
+    public void onServerStart(GameStartedServerEvent event) {
+        int count = 0;
+        count = getDataStore().getChunkLoaders().stream().filter((chunkLoader) -> (chunkLoader.isLoadable())).map((chunkLoader) -> {
+            getChunkManager().loadChunkLoader(chunkLoader);
+            return chunkLoader;
+        }).map((_item) -> 1).reduce(count, Integer::sum);
+        getLogger().info("Activated " + count + " chunk loaders.");
     }
 
     @Listener
