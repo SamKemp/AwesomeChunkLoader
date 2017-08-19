@@ -1,4 +1,4 @@
-package ca.shadownode.betterchunkloader.sponge.dataStore;
+package ca.shadownode.betterchunkloader.sponge.datastore;
 
 import ca.shadownode.betterchunkloader.sponge.data.PlayerData;
 import java.util.List;

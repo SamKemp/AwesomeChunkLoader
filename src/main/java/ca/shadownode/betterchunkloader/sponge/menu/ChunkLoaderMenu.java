@@ -136,6 +136,7 @@ public class ChunkLoaderMenu {
                         plugin.getDataStore().removeChunkLoader(chunkLoader);
                         plugin.getChunkManager().unloadChunkLoader(chunkLoader);
                         player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.removed));
+                        event.getTargetInventory().close(player, plugin.pluginCause);
                         return;
                     }
                     default: {

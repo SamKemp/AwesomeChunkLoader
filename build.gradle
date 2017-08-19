@@ -25,10 +25,10 @@ sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
 group = 'ca.shadownode.betterchunkloader'
-version = '3.4.8-SNAPSHOT'
+version = '3.4.9-SNAPSHOT'
 
 minecraft {
-    forgeVersion = "1.10.2-12.18.3.2254"
+    forgeVersion = "1.10.2-12.18.3.2281"
     mappings = "stable_29"
 }
 
@@ -52,7 +52,7 @@ repositories {
 }
 
 dependencies {    
-    compile 'org.spongepowered:spongeforge:1.10.2-2254-5.2.0-BETA-2231'
+    compile 'org.spongepowered:spongeforge:1.10.2-2281-5.2.0-BETA-2578'
 }
 
 task wrapper(type: Wrapper) {

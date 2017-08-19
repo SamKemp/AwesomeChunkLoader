@@ -24,6 +24,8 @@ import org.spongepowered.api.text.serializer.TextSerializers;
 import org.spongepowered.api.world.World;
 
 public class Utilities {
+    
+    private static Pattern URL_PATTERN = Pattern.compile("((https?|ftp|gopher|telnet|file):((//)|(\\\\))+[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]*)", Pattern.CASE_INSENSITIVE);
 
     public static Text parseMessage(String message) {
         return parseMessage(message, new HashMap<>());
@@ -71,11 +73,9 @@ public class Utilities {
 
     public static List<String> extractUrls(String text) {
         List<String> containedUrls = new ArrayList<>();
-        String urlRegex = "((https?|ftp|gopher|telnet|file):((//)|(\\\\))+[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]*)";
-        Pattern pattern = Pattern.compile(urlRegex, Pattern.CASE_INSENSITIVE);
         Matcher urlMatcher;
         try {
-            urlMatcher = pattern.matcher(text);
+            urlMatcher = URL_PATTERN.matcher(text);
             while (urlMatcher.find()) {
                 containedUrls.add(text.substring(urlMatcher.start(0), urlMatcher.end(0)));
             }
