@@ -2,6 +2,7 @@ package ca.shadownode.betterchunkloader.sponge.commands;
 
 import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.ChunkLoader;
+import ca.shadownode.betterchunkloader.sponge.data.PlayerData;
 import ca.shadownode.betterchunkloader.sponge.utils.Utilities;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,90 +50,68 @@ public class CmdDelete implements CommandExecutor {
                 sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.noPlayerExists, args));
                 return CommandResult.empty();
             }
-            List<ChunkLoader> clList = plugin.getDataStore().getChunkLoadersByOwner(playerUUID.get());
-            switch (loaderType.get()) {
-                case "online": {
-                    int success = 0;
-                    for (ChunkLoader chunkLoader : clList) {
-                        if (!chunkLoader.isAlwaysOn()) {
-                            plugin.getChunkManager().unloadChunkLoader(chunkLoader);
-                            plugin.getDataStore().removeChunkLoader(chunkLoader);
-                            success++;
+            if (loaderType.get().equalsIgnoreCase("online") || loaderType.get().equalsIgnoreCase("alwayson")) {
+                List<ChunkLoader> clList = getChunkLoadersByType(playerUUID.get(), loaderType.get().equalsIgnoreCase("alwayson"));
+                Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(playerUUID.get());
+
+                int success = 0;
+                for (ChunkLoader chunkLoader : clList) {
+                    if (plugin.getDataStore().removeChunkLoader(chunkLoader)) {
+                        plugin.getChunkManager().unloadChunkLoader(chunkLoader);
+                        if (playerData.isPresent()) {
+                            if (!chunkLoader.isAlwaysOn()) {
+                                playerData.get().addOnlineChunksAmount(chunkLoader.getChunks());
+                            } else {
+                                playerData.get().addAlwaysOnChunksAmount(chunkLoader.getChunks());
+                            }
                         }
-                    }
-                    if (success > 0) {
-                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.others.success, args));
-                        return CommandResult.success();
-                    } else {
-                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.others.failure, args));
-                        return CommandResult.success();
+                        success++;
                     }
                 }
-                case "alwaysOn": {
-                    int success = 0;
-                    for (ChunkLoader chunkLoader : clList) {
-                        if (chunkLoader.isAlwaysOn()) {
-                            plugin.getChunkManager().unloadChunkLoader(chunkLoader);
-                            plugin.getDataStore().removeChunkLoader(chunkLoader);
-                            success++;
-                        }
-                    }
-                    if (success > 0) {
-                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.others.success, args));
-                        return CommandResult.success();
-                    } else {
-                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.others.failure, args));
-                        return CommandResult.success();
-                    }
+                if (success > 0) {
+                    sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.others.success, args));
+                    plugin.getDataStore().updatePlayerData(playerData.get());
+                    return CommandResult.success();
+                } else {
+                    sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.others.failure, args));
+                    return CommandResult.success();
                 }
-                default: {
-                    sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.invalidType, args));
-                    return CommandResult.empty();
-                }
+            } else {
+                sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.invalidType, args));
+                return CommandResult.empty();
             }
         } else {
             if (sender instanceof Player) {
                 Player player = (Player) sender;
-                List<ChunkLoader> clList = plugin.getDataStore().getChunkLoadersByOwner(player.getUniqueId());
-                switch (loaderType.get()) {
-                    case "online": {
-                        int success = 0;
-                        for (ChunkLoader chunkLoader : clList) {
-                            if (!chunkLoader.isAlwaysOn()) {
-                                plugin.getChunkManager().unloadChunkLoader(chunkLoader);
-                                plugin.getDataStore().removeChunkLoader(chunkLoader);
-                                success++;
+                if (loaderType.get().equalsIgnoreCase("online") || loaderType.get().equalsIgnoreCase("alwayson")) {
+                    List<ChunkLoader> clList = getChunkLoadersByType(player.getUniqueId(), loaderType.get().equalsIgnoreCase("alwayson"));
+                    Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(player.getUniqueId());
+
+                    int success = 0;
+                    for (ChunkLoader chunkLoader : clList) {
+                        if (plugin.getDataStore().removeChunkLoader(chunkLoader)) {
+                            plugin.getChunkManager().unloadChunkLoader(chunkLoader);
+                            if (playerData.isPresent()) {
+                                if (!chunkLoader.isAlwaysOn()) {
+                                    playerData.get().addOnlineChunksAmount(chunkLoader.getChunks());
+                                } else {
+                                    playerData.get().addAlwaysOnChunksAmount(chunkLoader.getChunks());
+                                }
                             }
-                        }
-                        if (success > 0) {
-                            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.own.success, args));
-                            return CommandResult.success();
-                        } else {
-                            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.own.failure, args));
-                            return CommandResult.success();
+                            success++;
                         }
                     }
-                    case "alwayson": {
-                        int success = 0;
-                        for (ChunkLoader chunkLoader : clList) {
-                            if (chunkLoader.isAlwaysOn()) {
-                                plugin.getChunkManager().unloadChunkLoader(chunkLoader);
-                                plugin.getDataStore().removeChunkLoader(chunkLoader);
-                                success++;
-                            }
-                        }
-                        if (success > 0) {
-                            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.own.success, args));
-                            return CommandResult.success();
-                        } else {
-                            sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.own.failure, args));
-                            return CommandResult.success();
-                        }
-                    }
-                    default: {
-                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.invalidType, args));
+                    if (success > 0) {
+                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.own.success, args));
+                        plugin.getDataStore().updatePlayerData(playerData.get());
+                        return CommandResult.success();
+                    } else {
+                        sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.own.failure, args));
                         return CommandResult.empty();
                     }
+                } else {
+                    sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.invalidType, args));
+                    return CommandResult.empty();
                 }
             } else {
                 sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.delete.consoleError, args));
