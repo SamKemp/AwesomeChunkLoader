@@ -12,7 +12,7 @@ import com.flowpowered.math.vector.Vector3i;
 import java.util.Optional;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.world.World;
 
@@ -30,6 +30,9 @@ public final class ChunkLoader {
 
     private Long creation;
     private Boolean isAlwaysOn;
+
+    public static final Optional<BlockType> ONLINE_TYPE = Sponge.getRegistry().getType(BlockType.class, BetterChunkLoader.getInstance().getConfig().getCore().chunkLoader.online.blockType);
+    public static final Optional<BlockType> ALWAYSON_TYPE = Sponge.getRegistry().getType(BlockType.class, BetterChunkLoader.getInstance().getConfig().getCore().chunkLoader.alwaysOn.blockType);
 
     public ChunkLoader(UUID uuid, UUID world, UUID owner, Vector3i location, Vector3i chunk, Integer radius, Long creation, Boolean isAlwaysOn) {
         this.uuid = uuid;
@@ -116,7 +119,11 @@ public final class ChunkLoader {
     public Boolean isExpired() {
         Optional<PlayerData> playerData = BetterChunkLoader.getInstance().getDataStore().getPlayerData(getOwner());
         if (playerData.isPresent()) {
-            return System.currentTimeMillis() - playerData.get().getLastOnline() > BetterChunkLoader.getInstance().getConfig().getCore().chunkLoader.expiry * 3600000L;
+            if (isAlwaysOn()) {
+                return System.currentTimeMillis() - playerData.get().getLastOnline() > BetterChunkLoader.getInstance().getConfig().getCore().chunkLoader.alwaysOn.expiry * 3600000L;
+            } else {
+                return System.currentTimeMillis() - playerData.get().getLastOnline() > BetterChunkLoader.getInstance().getConfig().getCore().chunkLoader.online.expiry * 3600000L;
+            }
         }
         return true;
     }
@@ -143,15 +150,15 @@ public final class ChunkLoader {
 
     public Boolean blockCheck() {
         Optional<World> _world = Sponge.getServer().getWorld(this.world);
-        if (_world.isPresent()) {
+        if (_world.isPresent() && ONLINE_TYPE.isPresent() && ALWAYSON_TYPE.isPresent()) {
             if (location == null) {
                 return false;
             }
             BlockState block = _world.get().getBlock(location);
             if (isAlwaysOn) {
-                return block.getType().equals(BlockTypes.DIAMOND_BLOCK);
+                return block.getType().equals(ALWAYSON_TYPE.get());
             } else {
-                return block.getType().equals(BlockTypes.IRON_BLOCK);
+                return block.getType().equals(ONLINE_TYPE.get());
             }
         }
         return false;

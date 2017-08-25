@@ -20,8 +20,8 @@ public class PlayerData {
         this.name = name;
         this.uuid = uuid;
         this.lastOnline = System.currentTimeMillis();
-        this.onlineChunksAmount = BetterChunkLoader.getInstance().getConfig().getCore().chunkLoader.defaultOnline;
-        this.alwaysOnChunksAmount = BetterChunkLoader.getInstance().getConfig().getCore().chunkLoader.defaultAlwaysOn;
+        this.onlineChunksAmount = BetterChunkLoader.getInstance().getConfig().getCore().chunkLoader.online.defaultOnline;
+        this.alwaysOnChunksAmount = BetterChunkLoader.getInstance().getConfig().getCore().chunkLoader.alwaysOn.defaultAlwaysOn;
     }
 
     public PlayerData(String name, UUID uuid, Long lastOnline, Integer onlineChunksAmount, Integer alwaysOnChunksAmount) {

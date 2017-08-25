@@ -30,7 +30,11 @@ public class CmdBalance implements CommandExecutor {
                     return CommandResult.success();
                 } else {
                     sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.noPlayerExists));
+                    return CommandResult.empty();
                 }
+            }else{
+                sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.balance.noPermission));
+                return CommandResult.empty();
             }
         } else {
             if (sender instanceof Player) {

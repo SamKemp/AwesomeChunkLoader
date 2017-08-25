@@ -57,22 +57,31 @@ public class MessagesConfig {
         @Setting("NotEnough")
         public String notEnough = "&cNot enough chunks Needed: &e{needed}&c Available: &e{available}&c.";
 
-        @Setting("Created")
-        public String created = "&aChunk loader created.";
+        @Setting("CreateSuccess")
+        public String createSuccess = "&aCreated chunkloader, your balance was modified.";
 
-        @Setting("Removed")
-        public String removed = "&cChunk loader removed.";
+        @Setting("CreateFailure")
+        public String createFailure = "&aFailed to create chunkloader, your balance was not modified.";
 
-        @Setting("Updated")
-        public String updated = "&eChunk loader updated.";
+        @Setting("RemoveSuccess")
+        public String removeSuccess = "&cRemoved chunkloader, updated the balance of the owner.";
+
+        @Setting("RemoveFailure")
+        public String removeFailure = "&cFailed to remove chunkloader, didn't update the balance of the owner.";
+
+        @Setting("UpdateSuccess")
+        public String updateSuccess = "&eUpdated chunkloader, your balance was modified.";
+
+        @Setting("UpdateFailure")
+        public String updateFailure = "&eFailed to update chunkloader, your balance was not modified.";
 
         @Setting("OwnerNotify")
-        public String ownerNotify = "&cYour chunk loader at &e{location}&c has been removed by &e{player}&c.";
+        public String ownerNotify = "&cYour chunk loader at &e{location}&c has been removed by &e{player}&c, your balance has been modified.";
     }
 
     @ConfigSerializable
     public static class Commands {
-        
+
         @Setting("NoPlayerExists")
         public String noPlayerExists = "&cThat player does not exist.";
 
@@ -93,7 +102,7 @@ public class MessagesConfig {
                     "&eUsage:",
                     "    &e/bcl balance ?<player>",
                     "    &e/bcl chunks <add|set|remove> <player> <online|alwayson>",
-                    "    &e/bcl delete <player> ?<type>",
+                    "    &e/bcl delete <type> ?<player>",
                     "    &e/bcl info",
                     "    &e/bcl list <type> ?<player>",
                     "    &e/bcl purge",
@@ -112,13 +121,13 @@ public class MessagesConfig {
 
         @Setting("Info")
         public CInfo info = new CInfo();
-        
+
         @Setting("List")
         public CList list = new CList();
-        
+
         @Setting("Reload")
         public CReload reload = new CReload();
-        
+
         @Setting("Purge")
         public CPurge purge = new CPurge();
 
@@ -127,6 +136,9 @@ public class MessagesConfig {
 
             @Setting("Usage")
             public String usage = "&eUsage: /bcl balance <player>";
+            
+            @Setting("NoPermission")
+            public String noPermission = "&cYou don't have permission to see the balance of other players.";
 
             @Setting("Success")
             public Success success = new Success();
@@ -148,7 +160,7 @@ public class MessagesConfig {
                 );
             }
             @Setting("Failure")
-            public String failure = "&cUnable to get the balance of this player.";
+            public String failure = "&cUnable to get the balance.";
         }
 
         @ConfigSerializable
@@ -167,10 +179,10 @@ public class MessagesConfig {
             public static class Add {
 
                 @Setting("Success")
-                public String success = "&aAdded &e{chunks}&a {type} chunks to &e{target}'s&a balance!";
+                public String success = "&aAdded &e{change}&a {type} chunks to &e{target}'s&a balance!";
 
                 @Setting("Failure")
-                public String failure = "&cCouldn't add &e{chunks}&c {type} chunks to &e{target}'s&c balance because it would exceed the offline chunks limit of &e{limit}&c.";
+                public String failure = "&cCouldn't add &e{change}&c {type} chunks to &e{target}'s&c balance because it would exceed the offline chunks limit of &e{limit}&c.";
 
             }
 
@@ -178,7 +190,7 @@ public class MessagesConfig {
             public static class Set {
 
                 @Setting("Success")
-                public String success = "&aSet &e{target}'s&a {type} chunk balance to &e{chunks}&a.";
+                public String success = "&aSet &e{target}'s&a {type} chunk balance to &e{change}&a.";
 
                 @Setting("Failure")
                 public String failure = "&cValue can not be less than 0.";
@@ -190,14 +202,42 @@ public class MessagesConfig {
         public static class CDelete {
 
             @Setting("Usage")
-            public String usage = "&eUsage: /bcl delete <player> <type>";
+            public String usage = "&eUsage: /bcl delete <type> ?<player>";
+            
+            @Setting("InvalidType")
+            public String invalidType = "&cInvalid chunkloader type: {type}, options are: (online|alwayson).";
+            
+            @Setting("ConsoleError")
+            public String consoleError = "&cOnly players can remove their own chunkloaders, please specify a player name.";
 
-            @Setting("Success")
-            public String success = "&aRemoved &e{type}&a chunk loaders from &e{player}&a.";
+            @Setting("Own")
+            public Own own = new Own();
 
-            @Setting("Failure")
-            public String failure = "&cPlayer &e{player}&c has no &e{type}&c chunkloaders.";
+            @Setting("Others")
+            public Others others = new Others();
 
+            @ConfigSerializable
+            public static class Own {
+
+                @Setting("Success")
+                public String success = "&aRemoved all your &e{type}&a chunkloaders.";
+
+                @Setting("Failure")
+                public String failure = "&cYou don't have any &e{type}&c chunkloaders.";
+            }
+
+            @ConfigSerializable
+            public static class Others {
+
+                @Setting("Success")
+                public String success = "&aRemoved &e{type}&a chunk loaders from &e{player}&a.";
+
+                @Setting("Failure")
+                public String failure = "&cPlayer &e{player}&c has no &e{type}&c chunkloaders.";
+
+                @Setting("NoPermission")
+                public String noPermission = "&cYou do not have permission to delete the chunkloaders of other players.";
+            }
         }
 
         @ConfigSerializable
@@ -227,17 +267,16 @@ public class MessagesConfig {
             public String failure = "&cNo statistics available!";
 
         }
-      
-      
+
         @ConfigSerializable
         public static class CList {
 
             @Setting("Usage")
-            public String usage = "&eUsage: /bcl list <online|offline> ?<player>";
-            
+            public String usage = "&eUsage: /bcl list <online|alwayson> ?<player>";
+
             @Setting("Success")
             public Success success = new Success();
-            
+
             @ConfigSerializable
             public static class Success {
 
@@ -246,7 +285,7 @@ public class MessagesConfig {
 
                 @Setting("Padding")
                 public String padding = "&8=";
-                
+
                 @Setting("Header")
                 public String header = "&eChunk Loaders:";
 
@@ -256,15 +295,15 @@ public class MessagesConfig {
 
             @Setting("NoLoaderType")
             public String noLoaderType = "&cNo loader type was specified, types: online, alwayson.";
-            
+
             @Setting("NoPermission")
             public String noPermission = "&cYou don't have permission to see others chunkloaders.";
-            
+
             @Setting("NoPlayer")
             public String noPlayer = "&cPlayer was specified but no player was found.";
 
         }
-     
+
         @ConfigSerializable
         public static class CPurge {
 

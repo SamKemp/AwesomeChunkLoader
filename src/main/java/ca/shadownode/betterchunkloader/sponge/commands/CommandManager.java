@@ -62,8 +62,8 @@ public class CommandManager {
                 .build();
         CommandSpec cmdDelete = CommandSpec.builder()
                 .arguments(
-                        GenericArguments.string(Text.of("player")),
-                        GenericArguments.optional(new LoaderTypeElement(Text.of("type")))
+                        new LoaderTypeElement(Text.of("type")),
+                        GenericArguments.optional(GenericArguments.string(Text.of("player")))
                 )
                 .executor(new CmdDelete(this.plugin))
                 .permission("betterchunkloader.commands.delete")

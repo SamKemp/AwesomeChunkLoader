@@ -82,38 +82,43 @@ public interface IDataStore {
      * Add a new chunk loader
      *
      * @param chunkLoader
+     * @return 
      */
-    public abstract void addChunkLoader(ChunkLoader chunkLoader);
+    public abstract boolean addChunkLoader(ChunkLoader chunkLoader);
 
     /**
      * Remove chunk loader
      *
      * @param chunkLoader
+     * @return 
      */
-    public abstract void removeChunkLoader(ChunkLoader chunkLoader);
+    public abstract boolean removeChunkLoader(ChunkLoader chunkLoader);
     
   
     /**
      * Update chunk loader radius in database.
      *
      * @param chunkLoader
+     * @return 
      */
-    public abstract void updateChunkLoader(ChunkLoader chunkLoader);
+    public abstract boolean updateChunkLoader(ChunkLoader chunkLoader);
 
 
     /**
      * Remove chunk loaders owned by someone with the specified UUID
      *
      * @param owner
+     * @return 
      */
-    public abstract void removeAllChunkLoaders(UUID owner);    
+    public abstract boolean removeAllChunkLoaders(UUID owner);    
     
     /**
      * Remove chunk loaders in a specific world.
      *
      * @param world
+     * @return 
      */
-    public abstract void removeAllChunkLoaders(World world);
+    public abstract boolean removeAllChunkLoaders(World world);
     
     /**
      * Get player data by uuid.
@@ -135,8 +140,9 @@ public interface IDataStore {
      * Updates the player data in all active data stores.
      *
      * @param playerData
+     * @return 
      */
-    public abstract void updatePlayerData(PlayerData playerData);
+    public abstract boolean updatePlayerData(PlayerData playerData);
 
     /**
      * Get players data

@@ -43,8 +43,8 @@ public class CmdChunks implements CommandExecutor {
             put("targetUUID", playerData.get().getUnqiueId().toString());
             put("online", String.valueOf(playerData.get().getOnlineChunksAmount()));
             put("alwayson", String.valueOf(playerData.get().getAlwaysOnChunksAmount()));
-            put("maxOnline", String.valueOf(plugin.getConfig().getCore().chunkLoader.maxOnline));
-            put("maxAlwaysOn", String.valueOf(plugin.getConfig().getCore().chunkLoader.maxAlwaysOn));
+            put("maxOnline", String.valueOf(plugin.getConfig().getCore().chunkLoader.online.maxOnline));
+            put("maxAlwaysOn", String.valueOf(plugin.getConfig().getCore().chunkLoader.alwaysOn.maxAlwaysOn));
             put("change", String.valueOf(changeValue));
         }};
         switch (chunksChangeOperatorElement) {
@@ -52,8 +52,8 @@ public class CmdChunks implements CommandExecutor {
                 switch (loaderTypeElement) {
                     case "alwayson": {
                         args.put("type", "Always On");
-                        args.put("limit", String.valueOf(plugin.getConfig().getCore().chunkLoader.maxAlwaysOn));
-                        if (playerData.get().getAlwaysOnChunksAmount() + changeValue > plugin.getConfig().getCore().chunkLoader.maxAlwaysOn) {
+                        args.put("limit", String.valueOf(plugin.getConfig().getCore().chunkLoader.alwaysOn.maxAlwaysOn));
+                        if (playerData.get().getAlwaysOnChunksAmount() + changeValue > plugin.getConfig().getCore().chunkLoader.alwaysOn.maxAlwaysOn) {
                             sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.chunks.add.failure, args));
                             return CommandResult.empty();
                         }
@@ -64,8 +64,8 @@ public class CmdChunks implements CommandExecutor {
                     }
                     case "online": {
                         args.put("type", "Online Only");
-                        args.put("limit", String.valueOf(plugin.getConfig().getCore().chunkLoader.maxOnline));
-                        if (playerData.get().getOnlineChunksAmount() + changeValue > plugin.getConfig().getCore().chunkLoader.maxOnline) {
+                        args.put("limit", String.valueOf(plugin.getConfig().getCore().chunkLoader.online.maxOnline));
+                        if (playerData.get().getOnlineChunksAmount() + changeValue > plugin.getConfig().getCore().chunkLoader.online.maxOnline) {
                             sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.chunks.add.failure, args));
                             return CommandResult.empty();
                         }
@@ -88,7 +88,7 @@ public class CmdChunks implements CommandExecutor {
                 switch (loaderTypeElement) {
                     case "alwayson": {
                         args.put("type", "Always On");
-                        args.put("limit", String.valueOf(plugin.getConfig().getCore().chunkLoader.maxAlwaysOn));
+                        args.put("limit", String.valueOf(plugin.getConfig().getCore().chunkLoader.alwaysOn.maxAlwaysOn));
                         playerData.get().setAlwaysOnChunksAmount(changeValue);
                         plugin.getDataStore().updatePlayerData(playerData.get());
                         sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.chunks.set.success, args));
@@ -96,7 +96,7 @@ public class CmdChunks implements CommandExecutor {
                     }
                     case "online": {
                         args.put("type", "Online Only");
-                        args.put("limit", String.valueOf(plugin.getConfig().getCore().chunkLoader.maxOnline));
+                        args.put("limit", String.valueOf(plugin.getConfig().getCore().chunkLoader.online.maxOnline));
                         playerData.get().setOnlineChunksAmount(changeValue);
                         plugin.getDataStore().updatePlayerData(playerData.get());
                         sender.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().commands.chunks.set.success, args));

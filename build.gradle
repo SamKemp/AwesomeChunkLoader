@@ -24,22 +24,23 @@ apply plugin: 'net.minecraftforge.gradle.forge'
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
-group = 'ca.shadownode.betterchunkloader'
-version = '3.4.9-SNAPSHOT'
+archivesBaseName = project.name.toLowerCase()
 
 minecraft {
-    forgeVersion = "1.10.2-12.18.3.2281"
-    mappings = "stable_29"
+    version = project.minecraftVersion
+    mappings = project.mcpMappings
 }
+
+version = "$minecraft.version-$version"
 
 sponge {
     plugin {
-        id = 'betterchunkloader'
+        id = project.id
         meta {
-            name = "BetterChunkLoader"
-            version = rootProject.version
-            authors = ["ShadowKitten"]
-            description = "Continuation of KaiKikuchi's BetterChunkLoader plugin for Sponge."
+            name = project.name
+            version = "$minecraft.version-$version"
+            authors = [project.author]
+            description = project.description
         }
     }
 }
@@ -52,7 +53,8 @@ repositories {
 }
 
 dependencies {    
-    compile 'org.spongepowered:spongeforge:1.10.2-2281-5.2.0-BETA-2578'
+    apiCompile "org.spongepowered:spongeapi:$apiVersion"
+    compileOnly "org.spongepowered:spongecommon:$apiVersion:dev"
 }
 
 task wrapper(type: Wrapper) {

@@ -42,7 +42,7 @@ public class VectorSerializer {
             ConfigurationNode node = loader.load();
             return Optional.of(node.getValue(TypeToken.of(Vector3i.class)));
         } catch (IOException | ObjectMappingException ex) {
-            plugin.getLogger().error("Error deserializing Location", ex);
+            plugin.getLogger().error("Error deserializing Vector3i", ex);
             return Optional.empty();
         }
     }

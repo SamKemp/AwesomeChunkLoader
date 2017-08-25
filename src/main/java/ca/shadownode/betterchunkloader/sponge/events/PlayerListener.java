@@ -11,13 +11,11 @@ import java.util.Optional;
 import java.util.UUID;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
-import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
-import org.spongepowered.api.item.ItemTypes;
 
 public class PlayerListener {
 
@@ -69,56 +67,59 @@ public class PlayerListener {
         Player player = event.getCause().last(Player.class).get();
         BlockSnapshot clickedBlock = event.getTargetBlock();
 
-        if (clickedBlock == null || player == null) {
+        if (clickedBlock == null || player == null || !ChunkLoader.ONLINE_TYPE.isPresent() || !ChunkLoader.ALWAYSON_TYPE.isPresent()) {
             return;
         }
 
-        if (clickedBlock.getState().getType().equals(BlockTypes.DIAMOND_BLOCK) || clickedBlock.getState().getType().equals(BlockTypes.IRON_BLOCK)) {
-            Optional<ChunkLoader> chunkLoader = plugin.getDataStore().getChunkLoaderAt(clickedBlock.getLocation().get());
-            if (player.getItemInHand(HandTypes.MAIN_HAND).isPresent() && player.getItemInHand(HandTypes.MAIN_HAND).get().getItem().getType().equals(ItemTypes.BLAZE_ROD)) {
-                if (!chunkLoader.isPresent()) {
-                    chunkLoader = Optional.of(new ChunkLoader(
-                            UUID.randomUUID(),
-                            clickedBlock.getWorldUniqueId(),
-                            player.getUniqueId(),
-                            clickedBlock.getLocation().get().getBlockPosition(),
-                            clickedBlock.getLocation().get().getChunkPosition(),
-                            -1,
-                            System.currentTimeMillis(),
-                            clickedBlock.getState().getType().equals(BlockTypes.DIAMOND_BLOCK)
-                    ));
+        if (!clickedBlock.getState().getType().equals(ChunkLoader.ONLINE_TYPE.get()) && !clickedBlock.getState().getType().equals(ChunkLoader.ALWAYSON_TYPE.get())) {
+            return;
+        }
+
+        Optional<ChunkLoader> chunkLoader = plugin.getDataStore().getChunkLoaderAt(clickedBlock.getLocation().get());
+        if (player.getItemInHand(HandTypes.MAIN_HAND).isPresent() && player.getItemInHand(HandTypes.MAIN_HAND).get().getItem().getType().getId().equalsIgnoreCase(plugin.getConfig().getCore().chunkLoader.wandType)) {
+            if (!chunkLoader.isPresent()) {
+                chunkLoader = Optional.of(new ChunkLoader(
+                        UUID.randomUUID(),
+                        clickedBlock.getWorldUniqueId(),
+                        player.getUniqueId(),
+                        clickedBlock.getLocation().get().getBlockPosition(),
+                        clickedBlock.getLocation().get().getChunkPosition(),
+                        -1,
+                        System.currentTimeMillis(),
+                        clickedBlock.getState().getType().equals(ChunkLoader.ALWAYSON_TYPE.get())
+                ));
+            }
+            if (!chunkLoader.get().canCreate(player)) {
+                player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.noPermissionCreate));
+                return;
+            }
+            new ChunkLoaderMenu(plugin).showMenu(player, chunkLoader.get());
+        } else {
+            HashMap<String, String> args = new HashMap<>();
+            args.put("playerName", player.getName());
+            args.put("playerUUID", player.getUniqueId().toString());
+            if (chunkLoader.isPresent()) {
+                Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(chunkLoader.get().getOwner());
+                if (playerData.isPresent()) {
+                    args.put("ownerName", playerData.get().getName());
+                    args.put("ownerUUID", playerData.get().getUnqiueId().toString());
                 }
-                if (!chunkLoader.get().canCreate(player)) {
-                    player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.noPermissionCreate));
-                    return;
-                }
-                new ChunkLoaderMenu(plugin).showMenu(player, chunkLoader.get());
-            } else {
-                HashMap<String, String> args = new HashMap<>();
-                args.put("playerName", player.getName());
-                args.put("playerUUID", player.getUniqueId().toString());
-                if (chunkLoader.isPresent()) {
-                    Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(chunkLoader.get().getOwner());
-                    if (playerData.isPresent()) {
-                        args.put("ownerName", playerData.get().getName());
-                        args.put("ownerUUID", playerData.get().getUnqiueId().toString());
-                    }
-                    args.put("location", Utilities.getReadableLocation(chunkLoader.get().getWorld(), chunkLoader.get().getLocation()));
-                    args.put("chunks", String.valueOf(chunkLoader.get().getChunks()));
-                    args.put("type", (chunkLoader.get().isAlwaysOn() ? "Always On" : "Online"));
-                    if (chunkLoader.get().canEdit(player)) {
-                        plugin.getPaginationService().builder()
-                                .contents(Utilities.parseMessageList(plugin.getConfig().getMessages().chunkLoader.info.items, args))
-                                .title(Utilities.parseMessage(plugin.getConfig().getMessages().chunkLoader.info.title))
-                                .padding(Utilities.parseMessage(plugin.getConfig().getMessages().chunkLoader.info.padding))
-                                .sendTo(player);
-                    } else {
-                        player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.noPermissionEdit, args));
-                    }
+                args.put("location", Utilities.getReadableLocation(chunkLoader.get().getWorld(), chunkLoader.get().getLocation()));
+                args.put("chunks", String.valueOf(chunkLoader.get().getChunks()));
+                args.put("type", (chunkLoader.get().isAlwaysOn() ? "Always On" : "Online"));
+                if (chunkLoader.get().canEdit(player)) {
+                    plugin.getPaginationService().builder()
+                            .contents(Utilities.parseMessageList(plugin.getConfig().getMessages().chunkLoader.info.items, args))
+                            .title(Utilities.parseMessage(plugin.getConfig().getMessages().chunkLoader.info.title))
+                            .padding(Utilities.parseMessage(plugin.getConfig().getMessages().chunkLoader.info.padding))
+                            .sendTo(player);
                 } else {
-                    player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.creationHelp, args));
+                    player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.noPermissionEdit, args));
                 }
+            } else {
+                player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.creationHelp, args));
             }
         }
+
     }
 }

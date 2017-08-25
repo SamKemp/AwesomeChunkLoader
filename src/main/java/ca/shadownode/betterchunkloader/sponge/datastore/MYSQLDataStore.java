@@ -41,7 +41,7 @@ public final class MYSQLDataStore implements IDataStore {
             return false;
         }
         try (Connection connection = getConnection()) {
-            connection.createStatement().executeUpdate("CREATE TABLE IF NOT EXISTS bcl_chunkloaders ("
+            connection.createStatement().executeUpdate("CREATE TABLE IF NOT EXISTS " + plugin.getConfig().getCore().dataStore.mysql.prefix + "chunkloaders ("
                     + "uuid VARCHAR(36) NOT NULL, "
                     + "world VARCHAR(36) NOT NULL, "
                     + "owner VARCHAR(36) NOT NULL, "
@@ -51,22 +51,13 @@ public final class MYSQLDataStore implements IDataStore {
                     + "creation BIGINT(20) NOT NULL, "
                     + "alwaysOn BOOLEAN NOT NULL, "
                     + "UNIQUE KEY uuid (uuid));");
-            connection.createStatement().executeUpdate("CREATE TABLE IF NOT EXISTS bcl_playerdata ("
+            connection.createStatement().executeUpdate("CREATE TABLE IF NOT EXISTS " + plugin.getConfig().getCore().dataStore.mysql.prefix + "playerdata ("
                     + "username VARCHAR(16) NOT NULL,"
                     + "uuid VARCHAR(36) NOT NULL, "
                     + "lastOnline BIGINT(20) NOT NULL, "
                     + "onlineAmount SMALLINT(6) UNSIGNED NOT NULL, "
                     + "alwaysOnAmount SMALLINT(6) UNSIGNED NOT NULL, "
                     + "UNIQUE KEY uuid (uuid));");
-            if (hasColumn("bcl_playerdata", "offlineAmount")) {
-                connection.createStatement().execute("ALTER TABLE `bcl_playerdata` CHANGE `offlineAmount` `alwaysOnAmount` SMALLINT(6);");
-            }
-            if (hasColumn("bcl_playerdata", "lastOnline")) {
-                connection.createStatement().execute("ALTER TABLE `bcl_playerdata` CHANGE `lastOnline` `lastOnline` BIGINT(20);");
-            }
-            if (hasColumn("bcl_chunkloaders", "creation")) {
-                connection.createStatement().execute("ALTER TABLE `bcl_chunkloaders` CHANGE `creation` `creation` BIGINT(20);");
-            }
         } catch (SQLException ex) {
             plugin.getLogger().error("Unable to create tables", ex);
             return false;
@@ -78,7 +69,7 @@ public final class MYSQLDataStore implements IDataStore {
     public List<ChunkLoader> getChunkLoaders() {
         List<ChunkLoader> clList = new ArrayList<>();
         try (Connection connection = getConnection()) {
-            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_chunkloaders");
+            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM " + plugin.getConfig().getCore().dataStore.mysql.prefix + "chunkloaders");
             while (rs.next()) {
                 Optional<Vector3i> optLocation = serializer.deserialize(rs.getString("location"));
                 Optional<Vector3i> optVector = serializer.deserialize(rs.getString("chunk"));
@@ -107,7 +98,7 @@ public final class MYSQLDataStore implements IDataStore {
     public List<ChunkLoader> getChunkLoaders(World world) {
         List<ChunkLoader> clList = new ArrayList<>();
         try (Connection connection = getConnection()) {
-            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_chunkloaders WHERE world = '" + world.getUniqueId().toString() + "'");
+            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM " + plugin.getConfig().getCore().dataStore.mysql.prefix + "chunkloaders WHERE world = '" + world.getUniqueId().toString() + "'");
             while (rs.next()) {
                 Optional<Vector3i> optLocation = serializer.deserialize(rs.getString("location"));
                 Optional<Vector3i> optVector = serializer.deserialize(rs.getString("chunk"));
@@ -136,7 +127,7 @@ public final class MYSQLDataStore implements IDataStore {
     public List<ChunkLoader> getChunkLoadersByType(Boolean isAlwaysOn) {
         List<ChunkLoader> clList = new ArrayList<>();
         try (Connection connection = getConnection()) {
-            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_chunkloaders WHERE alwaysOn = '" + isAlwaysOn + "'");
+            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM " + plugin.getConfig().getCore().dataStore.mysql.prefix + "chunkloaders WHERE alwaysOn = '" + isAlwaysOn + "'");
             while (rs.next()) {
                 Optional<Vector3i> optLocation = serializer.deserialize(rs.getString("location"));
                 Optional<Vector3i> optVector = serializer.deserialize(rs.getString("chunk"));
@@ -165,7 +156,7 @@ public final class MYSQLDataStore implements IDataStore {
     public List<ChunkLoader> getChunkLoadersByOwner(UUID ownerUUID) {
         List<ChunkLoader> clList = new ArrayList<>();
         try (Connection connection = getConnection()) {
-            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_chunkloaders WHERE owner = '" + ownerUUID.toString() + "'");
+            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM " + plugin.getConfig().getCore().dataStore.mysql.prefix + "chunkloaders WHERE owner = '" + ownerUUID.toString() + "'");
             while (rs.next()) {
                 Optional<Vector3i> optLocation = serializer.deserialize(rs.getString("location"));
                 Optional<Vector3i> optVector = serializer.deserialize(rs.getString("chunk"));
@@ -214,12 +205,12 @@ public final class MYSQLDataStore implements IDataStore {
     }
 
     @Override
-    public void addChunkLoader(ChunkLoader chunkLoader) {
+    public boolean addChunkLoader(ChunkLoader chunkLoader) {
         try (Connection connection = getConnection()) {
             Optional<String> locationStr = serializer.serialize(chunkLoader.getLocation());
             Optional<String> vectorStr = serializer.serialize(chunkLoader.getChunk());
             if (locationStr.isPresent() && vectorStr.isPresent()) {
-                PreparedStatement statement = connection.prepareStatement("INSERT INTO bcl_chunkloaders VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                PreparedStatement statement = connection.prepareStatement("INSERT INTO " + plugin.getConfig().getCore().dataStore.mysql.prefix + "chunkloaders VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
                 statement.setString(1, chunkLoader.getUniqueId().toString());
                 statement.setString(2, chunkLoader.getWorld().toString());
                 statement.setString(3, chunkLoader.getOwner().toString());
@@ -228,47 +219,51 @@ public final class MYSQLDataStore implements IDataStore {
                 statement.setInt(6, chunkLoader.getRadius());
                 statement.setLong(7, chunkLoader.getCreation());
                 statement.setBoolean(8, chunkLoader.isAlwaysOn());
-                statement.executeUpdate();
+                return statement.executeUpdate() > 0;
             }
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error adding ChunkLoader", ex);
         }
+        return false;
     }
 
     @Override
-    public void removeChunkLoader(ChunkLoader chunkLoader) {
+    public boolean removeChunkLoader(ChunkLoader chunkLoader) {
         try (Connection connection = getConnection()) {
-            connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE uuid = '" + chunkLoader.getUniqueId() + "' LIMIT 1");
+            return connection.createStatement().executeUpdate("DELETE FROM " + plugin.getConfig().getCore().dataStore.mysql.prefix + "chunkloaders WHERE uuid = '" + chunkLoader.getUniqueId() + "' LIMIT 1") > 0;
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error removing ChunkLoader.", ex);
         }
+        return false;
     }
 
     @Override
-    public void removeAllChunkLoaders(UUID playerUUID) {
+    public boolean removeAllChunkLoaders(UUID playerUUID) {
         try (Connection connection = getConnection()) {
-            connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE owner = '" + playerUUID.toString() + "'");
+            return connection.createStatement().executeUpdate("DELETE FROM " + plugin.getConfig().getCore().dataStore.mysql.prefix + "chunkloaders WHERE owner = '" + playerUUID.toString() + "'") > 0;
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error removing ChunkLoaders.", ex);
         }
+        return false;
     }
 
     @Override
-    public void removeAllChunkLoaders(World world) {
+    public boolean removeAllChunkLoaders(World world) {
         try (Connection connection = getConnection()) {
-            connection.createStatement().executeUpdate("DELETE FROM bcl_chunkloaders WHERE owner = '" + world.getUniqueId().toString() + "'");
+            return connection.createStatement().executeUpdate("DELETE FROM " + plugin.getConfig().getCore().dataStore.mysql.prefix + "chunkloaders WHERE owner = '" + world.getUniqueId().toString() + "'") > 0;
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error removing ChunkLoaders.", ex);
         }
+        return false;
     }
 
     @Override
-    public void updateChunkLoader(ChunkLoader chunkLoader) {
+    public boolean updateChunkLoader(ChunkLoader chunkLoader) {
         try (Connection connection = getConnection()) {
             Optional<String> locationStr = serializer.serialize(chunkLoader.getLocation());
             Optional<String> vectorStr = serializer.serialize(chunkLoader.getChunk());
             if (locationStr.isPresent() && vectorStr.isPresent()) {
-                PreparedStatement statement = connection.prepareStatement("REPLACE INTO bcl_chunkloaders VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                PreparedStatement statement = connection.prepareStatement("REPLACE INTO " + plugin.getConfig().getCore().dataStore.mysql.prefix + "chunkloaders VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
                 statement.setString(1, chunkLoader.getUniqueId().toString());
                 statement.setString(2, chunkLoader.getWorld().toString());
                 statement.setString(3, chunkLoader.getOwner().toString());
@@ -277,17 +272,18 @@ public final class MYSQLDataStore implements IDataStore {
                 statement.setInt(6, chunkLoader.getRadius());
                 statement.setLong(7, chunkLoader.getCreation());
                 statement.setBoolean(8, chunkLoader.isAlwaysOn());
-                statement.executeUpdate();
+                return statement.executeUpdate() > 0;
             }
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error updating chunk loader in database.", ex);
         }
+        return false;
     }
 
     @Override
     public Optional<PlayerData> getPlayerData(UUID playerUUID) {
         try (Connection connection = getConnection()) {
-            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_playerdata WHERE uuid = '" + playerUUID.toString() + "' LIMIT 1");
+            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM " + plugin.getConfig().getCore().dataStore.mysql.prefix + "playerdata WHERE uuid = '" + playerUUID.toString() + "' LIMIT 1");
             if (rs.next()) {
                 return Optional.ofNullable(new PlayerData(
                         rs.getString("username"),
@@ -313,7 +309,7 @@ public final class MYSQLDataStore implements IDataStore {
     @Override
     public Optional<PlayerData> getPlayerData(String playerName) {
         try (Connection connection = getConnection()) {
-            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_playerdata WHERE username = '" + playerName + "' LIMIT 1");
+            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM " + plugin.getConfig().getCore().dataStore.mysql.prefix + "playerdata WHERE username = '" + playerName + "' LIMIT 1");
             if (rs.next()) {
                 return Optional.ofNullable(new PlayerData(
                         rs.getString("username"),
@@ -330,25 +326,26 @@ public final class MYSQLDataStore implements IDataStore {
     }
 
     @Override
-    public void updatePlayerData(PlayerData playerData) {
+    public boolean updatePlayerData(PlayerData playerData) {
         try (Connection connection = getConnection()) {
-            PreparedStatement statement = connection.prepareStatement("REPLACE INTO bcl_playerdata VALUES (?, ?, ?, ?, ?)");
+            PreparedStatement statement = connection.prepareStatement("REPLACE INTO " + plugin.getConfig().getCore().dataStore.mysql.prefix + "playerdata VALUES (?, ?, ?, ?, ?)");
             statement.setString(1, playerData.getName());
             statement.setString(2, playerData.getUnqiueId().toString());
             statement.setLong(3, playerData.getLastOnline());
             statement.setInt(4, playerData.getOnlineChunksAmount());
             statement.setInt(5, playerData.getAlwaysOnChunksAmount());
-            statement.executeUpdate();
+            return statement.executeUpdate() > 0;
         } catch (SQLException ex) {
             plugin.getLogger().error("MYSQL: Error updating player..", ex);
         }
+        return false;
     }
 
     @Override
     public List<PlayerData> getPlayersData() {
         List<PlayerData> playerData = new ArrayList<>();
         try (Connection connection = getConnection()) {
-            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM bcl_playerdata");
+            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM " + plugin.getConfig().getCore().dataStore.mysql.prefix + "playerdata");
             while (rs.next()) {
                 playerData.add(new PlayerData(
                         rs.getString("username"),

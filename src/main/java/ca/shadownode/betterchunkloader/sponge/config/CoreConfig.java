@@ -8,13 +8,12 @@ public class CoreConfig {
 
     @Setting("Debug")
     public Boolean debug = false;
-    
+
     @Setting("DataStore")
     public DataStore dataStore = new DataStore();
-    
+
     @Setting("ChunkLoader")
     public ChunkLoader chunkLoader = new ChunkLoader();
-
 
     @ConfigSerializable
     public static class DataStore {
@@ -46,6 +45,9 @@ public class CoreConfig {
             @Setting("Password")
             public String password = "password";
             
+            @Setting("Prefix")
+            public String prefix = "bcl_";
+
         }
 
         @ConfigSerializable
@@ -53,6 +55,9 @@ public class CoreConfig {
 
             @Setting("File")
             public String file = "betterchunkloader.db";
+                        
+            @Setting("Prefix")
+            public String prefix = "bcl_";
 
         }
     }
@@ -60,19 +65,46 @@ public class CoreConfig {
     @ConfigSerializable
     public static class ChunkLoader {
 
-        @Setting("DefaultOnline")
-        public Integer defaultOnline = 0;
-        
-        @Setting("MaxOnline")
-        public Integer maxOnline = 300;
-        
-        @Setting("DefaultAlwaysOn")
-        public Integer defaultAlwaysOn = 0;
-        
-        @Setting("MaxAlwaysOn")
-        public Integer maxAlwaysOn = 300;
-        
-        @Setting(value = "Expiry", comment = "Max amount in hours the owner can be offline before considering this loader 'Expired'")
-        public Integer expiry = 72;
+        @Setting("Online")
+        public Online online = new Online();
+
+        @Setting("AlwaysOn")
+        public AlwaysOn alwaysOn = new AlwaysOn();
+
+        @Setting("WandType")
+        public String wandType = "minecraft:blaze_rod";
+
+        @ConfigSerializable
+        public static class Online {
+
+            @Setting("DefaultOnline")
+            public Integer defaultOnline = 0;
+
+            @Setting("MaxOnline")
+            public Integer maxOnline = 300;
+
+            @Setting(value = "Expiry", comment = "Max amount in hours the owner can be offline before considering this loader 'Expired'")
+            public Integer expiry = 72;
+
+            @Setting("BlockType")
+            public String blockType = "minecraft:iron_block";
+        }
+
+        @ConfigSerializable
+        public static class AlwaysOn {
+
+            @Setting("DefaultAlwaysOn")
+            public Integer defaultAlwaysOn = 0;
+
+            @Setting("MaxAlwaysOn")
+            public Integer maxAlwaysOn = 300;
+
+            @Setting(value = "Expiry", comment = "Max amount in hours the owner can be offline before considering this loader 'Expired'")
+            public Integer expiry = 72;
+
+            @Setting("BlockType")
+            public String blockType = "minecraft:diamond_block";
+
+        }
     }
 }
