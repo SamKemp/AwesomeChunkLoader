@@ -10,7 +10,7 @@ buildscript {
         }    
     }
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.2-SNAPSHOT'
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
     }
 }
 
@@ -46,6 +46,7 @@ sponge {
 }
 
 repositories {
+    mavenCentral()
     maven {
         name = 'sponge'
         url = 'http://repo.spongepowered.org/maven'
@@ -54,7 +55,9 @@ repositories {
 
 dependencies {    
     apiCompile "org.spongepowered:spongeapi:$apiVersion"
-    compileOnly "org.spongepowered:spongecommon:$apiVersion:dev"
+    compileOnly("org.spongepowered:spongecommon:$apiVersion:dev") {
+        exclude module: 'testplugins'
+    }
 }
 
 task wrapper(type: Wrapper) {

@@ -13,8 +13,6 @@ import org.slf4j.Logger;
 import org.spongepowered.api.Game;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
@@ -30,8 +28,6 @@ public class BetterChunkLoader {
     private Configuration config;
     private DataStoreManager dataStoreManager;
     private ChunkManager chunkManager;
-
-    public Cause pluginCause;
 
     @Inject
     private Logger logger;
@@ -52,8 +48,7 @@ public class BetterChunkLoader {
     @Listener
     public void onServerAboutStart(GameAboutToStartServerEvent event) {
         plugin = this;
-        pluginCause = Cause.of(NamedCause.source(this.pluginContainer));
-        
+
         config = new Configuration(this);
 
         if (config.loadCore() && config.loadMessages()) {
