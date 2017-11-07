@@ -32,31 +32,29 @@ public class PlayerListener {
     @Listener
     public void onPlayerLogin(ClientConnectionEvent.Join event) {
         Player player = event.getTargetEntity();
-        Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(player.getUniqueId());
-        if (playerData.isPresent()) {
-            playerData.get().setLastOnline(System.currentTimeMillis());
-            plugin.getDataStore().updatePlayerData(playerData.get());
+        plugin.getDataStore().getPlayerData(player.getUniqueId()).ifPresent((playerData) -> {
+            playerData.setLastOnline(System.currentTimeMillis());
+            plugin.getDataStore().updatePlayerData(playerData);
             List<ChunkLoader> clList = plugin.getDataStore().getChunkLoadersByOwner(player.getUniqueId());
-            clList.stream().filter((chunkLoader) -> (!chunkLoader.isAlwaysOn() && chunkLoader.isLoadable())).forEachOrdered((chunkLoader) -> {
+            clList.stream().filter((chunkLoader) -> (chunkLoader.isLoadable())).forEachOrdered((chunkLoader) -> {
                 plugin.getChunkManager().loadChunkLoader(chunkLoader);
             });
             plugin.getLogger().info("Loaded all online chunkloaders for Player: " + player.getName());
-        }
+        });
     }
 
     @Listener
     public void onPlayerQuit(ClientConnectionEvent.Disconnect event) {
         Player player = event.getTargetEntity();
-        Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(player.getUniqueId());
-        if (playerData.isPresent()) {
-            playerData.get().setLastOnline(System.currentTimeMillis());
-            plugin.getDataStore().updatePlayerData(playerData.get());
+        plugin.getDataStore().getPlayerData(player.getUniqueId()).ifPresent((playerData) -> {
+            playerData.setLastOnline(System.currentTimeMillis());
+            plugin.getDataStore().updatePlayerData(playerData);
             List<ChunkLoader> clList = plugin.getDataStore().getChunkLoadersByOwner(player.getUniqueId());
             clList.stream().filter((chunkLoader) -> (!chunkLoader.isAlwaysOn() && chunkLoader.isLoadable())).forEachOrdered((chunkLoader) -> {
                 plugin.getChunkManager().unloadChunkLoader(chunkLoader);
             });
             plugin.getLogger().info("Unloaded all online chunkloaders for Player: " + player.getName());
-        }
+        });
     }
 
     @Listener
@@ -67,11 +65,11 @@ public class PlayerListener {
         Player player = event.getCause().last(Player.class).get();
         BlockSnapshot clickedBlock = event.getTargetBlock();
 
-        if (clickedBlock == null || player == null || !ChunkLoader.ONLINE_TYPE.isPresent() || !ChunkLoader.ALWAYSON_TYPE.isPresent()) {
+        if (clickedBlock == null || player == null) {
             return;
         }
 
-        if (!clickedBlock.getState().getType().equals(ChunkLoader.ONLINE_TYPE.get()) && !clickedBlock.getState().getType().equals(ChunkLoader.ALWAYSON_TYPE.get())) {
+        if (!clickedBlock.getState().getType().equals(ChunkLoader.ONLINE_TYPE) && !clickedBlock.getState().getType().equals(ChunkLoader.ALWAYSON_TYPE)) {
             return;
         }
 
@@ -86,7 +84,7 @@ public class PlayerListener {
                         clickedBlock.getLocation().get().getChunkPosition(),
                         -1,
                         System.currentTimeMillis(),
-                        clickedBlock.getState().getType().equals(ChunkLoader.ALWAYSON_TYPE.get())
+                        clickedBlock.getState().getType().equals(ChunkLoader.ALWAYSON_TYPE)
                 ));
             }
             if (!chunkLoader.get().canCreate(player)) {

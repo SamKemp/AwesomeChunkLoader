@@ -2,7 +2,6 @@ package ca.shadownode.betterchunkloader.sponge.menu;
 
 import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.ChunkLoader;
-import ca.shadownode.betterchunkloader.sponge.data.PlayerData;
 import ca.shadownode.betterchunkloader.sponge.utils.Utilities;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,28 +32,25 @@ public class ChunkLoaderMenu {
     }
 
     public void showMenu(Player player, ChunkLoader chunkLoader) {
-        Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(chunkLoader.getOwner());
-        if (!playerData.isPresent()) {
-            return;
-        }
-        String title = (chunkLoader.getRadius() != -1 ? "BCL: " + playerData.get().getName() + " Chunks: " + chunkLoader.getChunks() + " " : chunkLoader.isAlwaysOn() ? "Always On Chunk Loader" : "Online Only ChunkLoader");
-        if (title.length() > 32) {
-            title = title.substring(0, 32);
-        }
-        Inventory inventory = Inventory.builder()
-                .of(InventoryArchetypes.MENU_ROW)
-                .property(InventoryTitle.PROPERTY_NAME, InventoryTitle.of(Text.of(title)))
-                .listener(ClickInventoryEvent.class, createMenuListener(chunkLoader))
-                .build(plugin);
-        if (chunkLoader.getRadius() != -1) {
-            SlotPos slotPos = new SlotPos(0, 0);
-            HashMap<Key, Object> keys = new HashMap<>();
-            List<Text> lores = new ArrayList<>();
-            lores.add(Text.of("SlotPos: " + slotPos.getX() + "," + slotPos.getY()));
-            keys.put(Keys.ITEM_LORE, lores);
-            keys.put(Keys.DISPLAY_NAME, Text.of("Remove"));
-            addMenuOption(inventory, slotPos, ItemTypes.REDSTONE_TORCH, keys);
-        }
+        plugin.getDataStore().getPlayerData(chunkLoader.getOwner()).ifPresent((playerData) -> {
+            String title = (chunkLoader.getRadius() != -1 ? "BCL: " + playerData.getName() + " Chunks: " + chunkLoader.getChunks() + " " : chunkLoader.isAlwaysOn() ? "Always On Chunk Loader" : "Online Only ChunkLoader");
+            if (title.length() > 32) {
+                title = title.substring(0, 32);
+            }
+            Inventory inventory = Inventory.builder()
+                    .of(InventoryArchetypes.MENU_ROW)
+                    .property(InventoryTitle.PROPERTY_NAME, InventoryTitle.of(Text.of(title)))
+                    .listener(ClickInventoryEvent.class, createMenuListener(chunkLoader))
+                    .build(plugin);
+            if (chunkLoader.getRadius() != -1) {
+                SlotPos slotPos = new SlotPos(0, 0);
+                HashMap<Key, Object> keys = new HashMap<>();
+                List<Text> lores = new ArrayList<>();
+                lores.add(Text.of("SlotPos: " + slotPos.getX() + "," + slotPos.getY()));
+                keys.put(Keys.ITEM_LORE, lores);
+                keys.put(Keys.DISPLAY_NAME, Text.of("Remove"));
+                addMenuOption(inventory, slotPos, ItemTypes.REDSTONE_TORCH, keys);
+            }
 
         int pos = 2;
         for (int radius = 0; radius < 5;) {
@@ -72,6 +68,7 @@ public class ChunkLoaderMenu {
             radius++;
         }
         player.openInventory(inventory);
+        });
     }
 
     public void addMenuOption(Inventory inventory, SlotPos slotPos, ItemType icon, HashMap<Key, Object> keys) {
@@ -102,109 +99,107 @@ public class ChunkLoaderMenu {
                     return;
                 }
 
-                Optional<PlayerData> playerData = plugin.getDataStore().getPlayerData(player.getUniqueId());
-                if (!playerData.isPresent()) {
-                    return;
-                }
+                plugin.getDataStore().getPlayerData(player.getUniqueId()).ifPresent((playerData) -> {
 
-                Optional<SlotPos> slotPos = getSlotPos(event.getCursorTransaction());
-                Optional<Integer> radius = getRadius(event.getCursorTransaction());
-                Optional<Integer> chunks = getChunks(event.getCursorTransaction());
+                    Optional<SlotPos> slotPos = getSlotPos(event.getCursorTransaction());
+                    Optional<Integer> radius = getRadius(event.getCursorTransaction());
+                    Optional<Integer> chunks = getChunks(event.getCursorTransaction());
 
-                if (!slotPos.isPresent()) {
-                    player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.invalidOption));
-                    return;
-                }
-
-                int available;
-                if (chunkLoader.isAlwaysOn()) {
-                    available = playerData.get().getAlwaysOnChunksAmount();
-                } else {
-                    available = playerData.get().getOnlineChunksAmount();
-                }
-
-                switch (slotPos.get().getX()) {
-                    case 0: {
-                        if (plugin.getDataStore().removeChunkLoader(chunkLoader)) {
-                            plugin.getChunkManager().unloadChunkLoader(chunkLoader);
-
-                            if (chunkLoader.isAlwaysOn() && !player.hasPermission("betterchunkloader.chunkloader.unlimitedchunks")) {
-                                playerData.get().addAlwaysOnChunksAmount(chunkLoader.getChunks());
-                            } else {
-                                playerData.get().addOnlineChunksAmount(chunkLoader.getChunks());
-                            }
-                            plugin.getDataStore().updatePlayerData(playerData.get());
-                            player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.removeSuccess));
-                        } else {
-                            player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.removeFailure));
-                        }
+                    if (!slotPos.isPresent()) {
+                        player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.invalidOption));
                         return;
                     }
-                    default: {
 
-                        HashMap<String, String> args = new HashMap<>();
-                        args.put("playerName", player.getName());
-                        args.put("playerUUID", player.getUniqueId().toString());
-                        args.put("ownerName", playerData.get().getName());
-                        args.put("ownerUUID", playerData.get().getUnqiueId().toString());
-                        args.put("chunks", String.valueOf(chunkLoader.getChunks()));
-                        args.put("available", String.valueOf(available));
+                    int available;
+                    if (chunkLoader.isAlwaysOn()) {
+                        available = playerData.getAlwaysOnChunksAmount();
+                    } else {
+                        available = playerData.getOnlineChunksAmount();
+                    }
 
-                        if (chunkLoader.getRadius() == -1) {
-                            if (!player.hasPermission("betterchunkloader.chunkloader.unlimitedchunks") && chunks.get() > available) {
-                                args.put("needed", String.valueOf(chunks.get()));
-                                player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.notEnough, args));
+                    switch (slotPos.get().getX()) {
+                        case 0: {
+                            if (plugin.getDataStore().removeChunkLoader(chunkLoader)) {
+                                plugin.getChunkManager().unloadChunkLoader(chunkLoader);
+
+                                if (chunkLoader.isAlwaysOn() && !player.hasPermission("betterchunkloader.chunkloader.unlimitedchunks")) {
+                                    playerData.addAlwaysOnChunksAmount(chunkLoader.getChunks());
+                                } else {
+                                    playerData.addOnlineChunksAmount(chunkLoader.getChunks());
+                                }
+                                plugin.getDataStore().updatePlayerData(playerData);
+                                player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.removeSuccess));
+                            } else {
+                                player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.removeFailure));
+                            }
+                            return;
+                        }
+                        default: {
+
+                            HashMap<String, String> args = new HashMap<>();
+                            args.put("playerName", player.getName());
+                            args.put("playerUUID", player.getUniqueId().toString());
+                            args.put("ownerName", playerData.getName());
+                            args.put("ownerUUID", playerData.getUnqiueId().toString());
+                            args.put("chunks", String.valueOf(chunkLoader.getChunks()));
+                            args.put("available", String.valueOf(available));
+
+                            if (chunkLoader.getRadius() == -1) {
+                                if (!player.hasPermission("betterchunkloader.chunkloader.unlimitedchunks") && chunks.get() > available) {
+                                    args.put("needed", String.valueOf(chunks.get()));
+                                    player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.notEnough, args));
+                                    break;
+                                } else {
+                                    chunkLoader.setRadius(radius.get());
+                                    chunkLoader.setCreation(System.currentTimeMillis());
+                                    if (plugin.getDataStore().addChunkLoader(chunkLoader)) {
+                                        plugin.getChunkManager().loadChunkLoader(chunkLoader);
+                                        if (!player.hasPermission("betterchunkloader.chunkloader.unlimitedchunks")) {
+                                            if (chunkLoader.isAlwaysOn()) {
+                                                playerData.setAlwaysOnChunksAmount(Math.subtractExact(available, chunks.get()));
+                                            } else {
+                                                playerData.setOnlineChunksAmount(Math.subtractExact(available, chunks.get()));
+                                            }
+                                        }
+                                        plugin.getDataStore().updatePlayerData(playerData);
+                                        plugin.getLogger().info(player.getName() + " made a new chunk loader at " + Utilities.getReadableLocation(chunkLoader.getWorld(), chunkLoader.getLocation()) + " with radius " + chunkLoader.getRadius());
+                                        player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.createSuccess));
+                                    } else {
+                                        plugin.getLogger().info(player.getName() + " failed to create new chunk loader at " + Utilities.getReadableLocation(chunkLoader.getWorld(), chunkLoader.getLocation()) + " with radius " + chunkLoader.getRadius());
+                                        player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.createFailure));
+                                    }
+                                }
                                 break;
                             } else {
-                                chunkLoader.setRadius(radius.get());
-                                chunkLoader.setCreation(System.currentTimeMillis());
-                                if (plugin.getDataStore().addChunkLoader(chunkLoader)) {
-                                    plugin.getChunkManager().loadChunkLoader(chunkLoader);
-                                    if (!player.hasPermission("betterchunkloader.chunkloader.unlimitedchunks")) {
-                                        if (chunkLoader.isAlwaysOn()) {
-                                            playerData.get().setAlwaysOnChunksAmount(Math.subtractExact(available, chunks.get()));
-                                        } else {
-                                            playerData.get().setOnlineChunksAmount(Math.subtractExact(available, chunks.get()));
-                                        }
-                                    }
-                                    plugin.getDataStore().updatePlayerData(playerData.get());
-                                    plugin.getLogger().info(player.getName() + " made a new chunk loader at " + Utilities.getReadableLocation(chunkLoader.getWorld(), chunkLoader.getLocation()) + " with radius " + chunkLoader.getRadius());
-                                    player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.createSuccess));
+                                if (!player.hasPermission("betterchunkloader.chunkloader.unlimitedchunks") && Math.subtractExact(chunks.get(), chunkLoader.getChunks()) > available) {
+                                    args.put("needed", String.valueOf(Math.subtractExact(chunks.get(), chunkLoader.getChunks())));
+                                    player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.notEnough, args));
+                                    break;
                                 } else {
-                                    plugin.getLogger().info(player.getName() + " failed to create new chunk loader at " + Utilities.getReadableLocation(chunkLoader.getWorld(), chunkLoader.getLocation()) + " with radius " + chunkLoader.getRadius());
-                                    player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.createFailure));
+                                    chunkLoader.setRadius(radius.get());
+                                    if (plugin.getDataStore().updateChunkLoader(chunkLoader)) {
+                                        plugin.getChunkManager().unloadChunkLoader(chunkLoader);
+                                        plugin.getChunkManager().loadChunkLoader(chunkLoader);
+                                        if (!player.hasPermission("betterchunkloader.chunkloader.unlimitedchunks")) {
+                                            if (chunkLoader.isAlwaysOn()) {
+                                                playerData.setAlwaysOnChunksAmount(Math.subtractExact(chunks.get(), Math.addExact(available, chunkLoader.getChunks())));
+                                            } else {
+                                                playerData.setOnlineChunksAmount(Math.subtractExact(chunks.get(), Math.addExact(available, chunkLoader.getChunks())));
+                                            }
+                                        }
+                                        plugin.getDataStore().updatePlayerData(playerData);
+                                        plugin.getLogger().info(player.getName() + " edited " + playerData.getName() + "'s chunk loader at " + Utilities.getReadableLocation(chunkLoader.getWorld(), chunkLoader.getLocation()) + " radius from " + chunkLoader.getRadius() + " to " + radius.get());
+                                        player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.updateSuccess, args));
+                                    } else {
+                                        plugin.getLogger().info(player.getName() + " failed to edit " + playerData.getName() + "'s chunk loader at " + Utilities.getReadableLocation(chunkLoader.getWorld(), chunkLoader.getLocation()) + " radius from " + chunkLoader.getRadius() + " to " + radius.get());
+                                        player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.updateSuccess, args));
+                                    }
                                 }
-                            }
-                            break;
-                        } else {
-                            if (!player.hasPermission("betterchunkloader.chunkloader.unlimitedchunks") && Math.subtractExact(chunks.get(), chunkLoader.getChunks()) > available) {
-                                args.put("needed", String.valueOf(Math.subtractExact(chunks.get(), chunkLoader.getChunks())));
-                                player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.notEnough, args));
                                 break;
-                            } else {
-                                chunkLoader.setRadius(radius.get());
-                                if (plugin.getDataStore().updateChunkLoader(chunkLoader)) {
-                                    plugin.getChunkManager().unloadChunkLoader(chunkLoader);
-                                    plugin.getChunkManager().loadChunkLoader(chunkLoader);
-                                    if (!player.hasPermission("betterchunkloader.chunkloader.unlimitedchunks")) {
-                                        if (chunkLoader.isAlwaysOn()) {
-                                            playerData.get().setAlwaysOnChunksAmount(Math.subtractExact(chunks.get(), Math.addExact(available, chunkLoader.getChunks())));
-                                        } else {
-                                            playerData.get().setOnlineChunksAmount(Math.subtractExact(chunks.get(), Math.addExact(available, chunkLoader.getChunks())));
-                                        }
-                                    }
-                                    plugin.getDataStore().updatePlayerData(playerData.get());
-                                    plugin.getLogger().info(player.getName() + " edited " + playerData.get().getName() + "'s chunk loader at " + Utilities.getReadableLocation(chunkLoader.getWorld(), chunkLoader.getLocation()) + " radius from " + chunkLoader.getRadius() + " to " + radius.get());
-                                    player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.updateSuccess, args));
-                                } else {
-                                    plugin.getLogger().info(player.getName() + " failed to edit " + playerData.get().getName() + "'s chunk loader at " + Utilities.getReadableLocation(chunkLoader.getWorld(), chunkLoader.getLocation()) + " radius from " + chunkLoader.getRadius() + " to " + radius.get());
-                                    player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.updateSuccess, args));
-                                }
                             }
-                            break;
                         }
                     }
-                }
+                });
             }
         };
     }

@@ -18,6 +18,7 @@ import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.ChunkTicketManager;
 import org.spongepowered.api.world.ChunkTicketManager.LoadingTicket;
 import org.spongepowered.api.world.World;
+import org.spongepowered.common.interfaces.world.gen.IMixinChunkProviderServer;
 
 public class ChunkManager {
 
@@ -48,6 +49,9 @@ public class ChunkManager {
         ticketManager = Sponge.getServiceManager().provide(ChunkTicketManager.class);
         if (ticketManager.isPresent()) {
             ticketManager.get().registerCallback(plugin, new ChunkLoadingCallback(plugin));
+            Sponge.getServer().getWorlds().stream().map((world) -> (IMixinChunkProviderServer) ((net.minecraft.world.WorldServer) world).getChunkProvider()).forEachOrdered((chunkProviderServer) -> {
+                chunkProviderServer.setForceChunkRequests(true);
+            });
             if (plugin.getConfig().getCore().debug) {
                 plugin.getLogger().debug("MaxTickets: " + ticketManager.get().getMaxTickets(plugin.pluginContainer));
                 Sponge.getServer().getWorlds().stream().map((world) -> {
