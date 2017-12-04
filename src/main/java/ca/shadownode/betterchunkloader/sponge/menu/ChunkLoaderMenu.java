@@ -52,22 +52,22 @@ public class ChunkLoaderMenu {
                 addMenuOption(inventory, slotPos, ItemTypes.REDSTONE_TORCH, keys);
             }
 
-        int pos = 2;
-        for (int radius = 0; radius < 5;) {
-            Integer chunks = Double.valueOf(Math.pow((2 * radius) + 1, 2)).intValue();
-            SlotPos slotPos = new SlotPos(pos, 0);
-            HashMap<Key, Object> keys = new HashMap<>();
-            List<Text> lores = new ArrayList<>();
-            lores.add(Text.of("SlotPos: " + slotPos.getX() + "," + slotPos.getY()));
-            lores.add(Text.of("Radius: " + radius));
-            lores.add(Text.of("Chunks: " + chunks));
-            keys.put(Keys.ITEM_LORE, lores);
-            keys.put(Keys.DISPLAY_NAME, Text.of((chunkLoader.getRadius() == radius ? "Size: " + (radius + 1) + " [Active]" : "Size: " + (radius + 1))));
-            addMenuOption(inventory, slotPos, (chunkLoader.getRadius() == radius ? ItemTypes.POTION : ItemTypes.GLASS_BOTTLE), keys);
-            pos++;
-            radius++;
-        }
-        player.openInventory(inventory);
+            int pos = 2;
+            for (int radius = 0; radius < 5;) {
+                Integer chunks = Double.valueOf(Math.pow((2 * radius) + 1, 2)).intValue();
+                SlotPos slotPos = new SlotPos(pos, 0);
+                HashMap<Key, Object> keys = new HashMap<>();
+                List<Text> lores = new ArrayList<>();
+                lores.add(Text.of("SlotPos: " + slotPos.getX() + "," + slotPos.getY()));
+                lores.add(Text.of("Radius: " + radius));
+                lores.add(Text.of("Chunks: " + chunks));
+                keys.put(Keys.ITEM_LORE, lores);
+                keys.put(Keys.DISPLAY_NAME, Text.of((chunkLoader.getRadius() == radius ? "Size: " + (radius + 1) + " [Active]" : "Size: " + (radius + 1))));
+                addMenuOption(inventory, slotPos, (chunkLoader.getRadius() == radius ? ItemTypes.POTION : ItemTypes.GLASS_BOTTLE), keys);
+                pos++;
+                radius++;
+            }
+            player.openInventory(inventory);
         });
     }
 

@@ -7,6 +7,7 @@ import ca.shadownode.betterchunkloader.sponge.datastore.DataStoreManager;
 import ca.shadownode.betterchunkloader.sponge.datastore.IDataStore;
 import ca.shadownode.betterchunkloader.sponge.events.PlayerListener;
 import ca.shadownode.betterchunkloader.sponge.events.WorldListener;
+import ca.shadownode.betterchunkloader.sponge.menu.MenuListener;
 import java.io.File;
 import ninja.leaping.configurate.objectmapping.GuiceObjectMapperFactory;
 import org.slf4j.Logger;
@@ -66,6 +67,7 @@ public class BetterChunkLoader {
 
                 new PlayerListener(this).register();
                 new WorldListener(this).register();
+                new MenuListener(this).register();
                 new CommandManager(this).register();
 
                 getLogger().info("Load complete.");

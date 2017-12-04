@@ -10,15 +10,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import net.minecraft.world.WorldServer;
-import net.minecraftforge.common.DimensionManager;
-import net.minecraftforge.common.ForgeChunkManager;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.ChunkTicketManager;
 import org.spongepowered.api.world.ChunkTicketManager.LoadingTicket;
 import org.spongepowered.api.world.World;
-import org.spongepowered.common.interfaces.world.gen.IMixinChunkProviderServer;
 
 public class ChunkManager {
 
@@ -31,27 +27,26 @@ public class ChunkManager {
     public ChunkManager(BetterChunkLoader plugin) {
         this.plugin = plugin;
         try {
-            boolean overridesEnabled = getField(ForgeChunkManager.class, "overridesEnabled").getBoolean(null);
+            Class forgeChunkManager = Class.forName("net.minecraftforge.common.ForgeChunkManager");
+            boolean overridesEnabled = getField(forgeChunkManager, "overridesEnabled").getBoolean(null);
 
             if (!overridesEnabled) {
-                getField(ForgeChunkManager.class, "overridesEnabled").set(null, true);
+                getField(forgeChunkManager, "overridesEnabled").set(null, true);
             }
 
-            Map<String, Integer> ticketConstraints = (Map<String, Integer>) getField(ForgeChunkManager.class, "ticketConstraints").get(null);
-            Map<String, Integer> chunkConstraints = (Map<String, Integer>) getField(ForgeChunkManager.class, "chunkConstraints").get(null);
+            Map<String, Integer> ticketConstraints = (Map<String, Integer>) getField(forgeChunkManager, "ticketConstraints").get(null);
+            Map<String, Integer> chunkConstraints = (Map<String, Integer>) getField(forgeChunkManager, "chunkConstraints").get(null);
 
             ticketConstraints.put("betterchunkloader", Integer.MAX_VALUE);
             chunkConstraints.put("betterchunkloader", Integer.MAX_VALUE);
 
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException ex) {
+        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException | ClassNotFoundException ex) {
             plugin.getLogger().error("ChunkManager failed to force chunk constraints", ex);
         }
         ticketManager = Sponge.getServiceManager().provide(ChunkTicketManager.class);
         if (ticketManager.isPresent()) {
             ticketManager.get().registerCallback(plugin, new ChunkLoadingCallback(plugin));
-            Sponge.getServer().getWorlds().stream().map((world) -> (IMixinChunkProviderServer) ((net.minecraft.world.WorldServer) world).getChunkProvider()).forEachOrdered((chunkProviderServer) -> {
-                chunkProviderServer.setForceChunkRequests(true);
-            });
+            
             if (plugin.getConfig().getCore().debug) {
                 plugin.getLogger().debug("MaxTickets: " + ticketManager.get().getMaxTickets(plugin.pluginContainer));
                 Sponge.getServer().getWorlds().stream().map((world) -> {
@@ -96,9 +91,9 @@ public class ChunkManager {
         return true;
     }
 
-    public Optional<WorldServer> getWorld(String worldName) {
-        for (WorldServer world : DimensionManager.getWorlds()) {
-            if (world.getWorldInfo().getWorldName().equalsIgnoreCase(worldName)) {
+    public Optional<World> getWorld(String worldName) {
+        for (World world : Sponge.getServer().getWorlds()) {
+            if (world.getName().equalsIgnoreCase(worldName)) {
                 return Optional.of(world);
             }
         }

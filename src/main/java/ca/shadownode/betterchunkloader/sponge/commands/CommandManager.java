@@ -23,7 +23,7 @@ public class CommandManager {
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("player"))))
                 )
                 .executor(new CmdBalance(this.plugin))
-                .permission("betterchunkloader.commands.balance")
+                .permission("betterchunkloader.commands.balance.base")
                 .build();
 
         CommandSpec cmdReload = CommandSpec.builder()
@@ -31,7 +31,7 @@ public class CommandManager {
                         GenericArguments.optional(new ReloadTypeElement(Text.of("type")))
                 )
                 .executor(new CmdReload(this.plugin))
-                .permission("betterchunkloader.commands.reload")
+                .permission("betterchunkloader.commands.reload.base")
                 .build();
 
         CommandSpec cmdInfo = CommandSpec.builder()
@@ -39,7 +39,7 @@ public class CommandManager {
                         GenericArguments.none()
                 )
                 .executor(new CmdInfo(this.plugin))
-                .permission("betterchunkloader.commands.info")
+                .permission("betterchunkloader.commands.info.base")
                 .build();
 
         CommandSpec cmdChunks = CommandSpec.builder()
@@ -50,7 +50,7 @@ public class CommandManager {
                         GenericArguments.integer(Text.of("value"))
                 )
                 .executor(new CmdChunks(this.plugin))
-                .permission("betterchunkloader.commands.chunks")
+                .permission("betterchunkloader.commands.chunks.base")
                 .build();
         CommandSpec cmdList = CommandSpec.builder()
                 .arguments(
@@ -58,7 +58,7 @@ public class CommandManager {
                         GenericArguments.optional(GenericArguments.string(Text.of("player")))
                 )
                 .executor(new CmdList(this.plugin))
-                .permission("betterchunkloader.commands.list")
+                .permission("betterchunkloader.commands.list.base")
                 .build();
         CommandSpec cmdDelete = CommandSpec.builder()
                 .arguments(
@@ -66,12 +66,12 @@ public class CommandManager {
                         GenericArguments.optional(GenericArguments.string(Text.of("player")))
                 )
                 .executor(new CmdDelete(this.plugin))
-                .permission("betterchunkloader.commands.delete")
+                .permission("betterchunkloader.commands.delete.base")
                 .build();
 
         CommandSpec cmdPurge = CommandSpec.builder()
                 .executor(new CmdPurge(this.plugin))
-                .permission("betterchunkloader.commands.purge")
+                .permission("betterchunkloader.commands.purge.base")
                 .build();
 
         CommandSpec bclCmdSpec = CommandSpec.builder()

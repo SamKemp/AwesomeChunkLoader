@@ -3,7 +3,7 @@ package ca.shadownode.betterchunkloader.sponge.events;
 import ca.shadownode.betterchunkloader.sponge.BetterChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.ChunkLoader;
 import ca.shadownode.betterchunkloader.sponge.data.PlayerData;
-import ca.shadownode.betterchunkloader.sponge.menu.ChunkLoaderMenu;
+import ca.shadownode.betterchunkloader.sponge.menu.Menu;
 import ca.shadownode.betterchunkloader.sponge.utils.Utilities;
 import java.util.HashMap;
 import java.util.List;
@@ -91,7 +91,7 @@ public class PlayerListener {
                 player.sendMessage(Utilities.parseMessage(plugin.getConfig().getMessages().prefix + plugin.getConfig().getMessages().chunkLoader.noPermissionCreate));
                 return;
             }
-            new ChunkLoaderMenu(plugin).showMenu(player, chunkLoader.get());
+            new Menu(plugin).showMenu(player, chunkLoader.get());
         } else {
             HashMap<String, String> args = new HashMap<>();
             args.put("playerName", player.getName());
