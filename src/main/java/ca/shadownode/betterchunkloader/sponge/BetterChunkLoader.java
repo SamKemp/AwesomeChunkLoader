@@ -87,15 +87,6 @@ public class BetterChunkLoader {
         getLogger().info("Activated " + count + " chunk loaders.");
     }
 
-    @Listener
-    public void onServerStopping(GameStoppingServerEvent event) {
-        if (getDataStore() != null) {
-            getDataStore().getChunkLoaders().stream().forEachOrdered((cl) -> {
-                getChunkManager().unloadChunkLoader(cl);
-            });
-        }
-    }
-
     public static BetterChunkLoader getInstance() {
         return plugin;
     }
