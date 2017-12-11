@@ -12,6 +12,7 @@ import java.io.File;
 import ninja.leaping.configurate.objectmapping.GuiceObjectMapperFactory;
 import org.slf4j.Logger;
 import org.spongepowered.api.Game;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
@@ -62,6 +63,8 @@ public class BetterChunkLoader {
 
                 getLogger().info("Registering Listeners...");
 
+                chunkManager = new ChunkManager(this);
+
                 new PlayerListener(this).register();
                 new WorldListener(this).register();
                 new MenuListener(this).register();
@@ -76,8 +79,18 @@ public class BetterChunkLoader {
 
     @Listener
     public void onServerStart(GameStartedServerEvent event) {
-        chunkManager = new ChunkManager(this);
-
+        chunkManager.getTicketManager().ifPresent((ticketManager) -> {
+            Sponge.getServer().getWorlds().stream().map((world) -> ticketManager.getForcedChunks(world)).forEachOrdered((forcedChunks) -> {
+                forcedChunks.values().forEach((ticket) -> {
+                    if (plugin.getConfig().getCore().debug) {
+                        plugin.getLogger().info("Ticket Plugin" + ticket.getPlugin());
+                    }
+                    if (ticket.getPlugin().contains("betterchunkloader")) {
+                        ticket.release();
+                    }
+                });
+            });
+        });
         int count = 0;
         count = getDataStore().getChunkLoaders().stream().filter((chunkLoader) -> (chunkLoader.isLoadable())).map((chunkLoader) -> {
             chunkManager.loadChunkLoader(chunkLoader);

@@ -164,6 +164,10 @@ public class ChunkManager {
         return tickets;
     }
 
+    public Optional<ChunkTicketManager> getTicketManager() {
+        return ticketManager;
+    }
+
     public List<Chunk> getChunks(Integer radius, Chunk chunk) {
         List<Chunk> chunks = new ArrayList<>(Arrays.asList());
         for (int x = -radius; x <= radius; x++) {
