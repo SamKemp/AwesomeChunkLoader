@@ -14,6 +14,7 @@ import org.spongepowered.api.Sponge;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.ChunkTicketManager;
 import org.spongepowered.api.world.ChunkTicketManager.LoadingTicket;
+import org.spongepowered.api.world.ChunkTicketManager.PlayerEntityLoadingTicket;
 import org.spongepowered.api.world.World;
 
 public class ChunkManager {
@@ -22,7 +23,7 @@ public class ChunkManager {
 
     private final Optional<ChunkTicketManager> ticketManager;
 
-    private final HashMap<UUID, Optional<LoadingTicket>> tickets = new HashMap<>();
+    private final HashMap<UUID, Optional<PlayerEntityLoadingTicket>> tickets = new HashMap<>();
 
     public ChunkManager(BetterChunkLoader plugin) {
         this.plugin = plugin;
@@ -70,10 +71,15 @@ public class ChunkManager {
         if (!mainChunk.isPresent()) {
             return false;
         }
+        Optional<PlayerEntityLoadingTicket> ticket = ticketManager.get().createPlayerEntityTicket(plugin, world.get(), chunkLoader.getOwner());
+        if (!ticket.isPresent()) {
+            return false;
+        }
         List<Chunk> chunks = getChunks(chunkLoader.getRadius(), mainChunk.get());
         chunks.forEach((chunk) -> {
-            loadChunk(chunkLoader, chunk);
+            loadChunk(ticket.get(), chunk);
         });
+        tickets.put(chunkLoader.getOwner(), ticket);
         return true;
     }
 
@@ -86,9 +92,13 @@ public class ChunkManager {
         if (!mainChunk.isPresent()) {
             return false;
         }
+        Optional<PlayerEntityLoadingTicket> ticket = tickets.get(chunkLoader.getOwner());
+        if (!mainChunk.isPresent()) {
+            return false;
+        }
         List<Chunk> chunks = getChunks(chunkLoader.getRadius(), mainChunk.get());
         chunks.forEach((chunk) -> {
-            unloadChunk(chunkLoader, chunk);
+            unloadChunk(ticket.get(), chunk);
         });
         return true;
     }
@@ -106,26 +116,19 @@ public class ChunkManager {
      *
      * Loads chunk using old or new ticket.
      *
-     * @param chunkLoader
+     * @param ticket
      * @param chunk
      * @return
      */
-    public boolean loadChunk(ChunkLoader chunkLoader, Chunk chunk) {
+    public boolean loadChunk(LoadingTicket ticket, Chunk chunk) {
         if (!ticketManager.isPresent()) {
             return false;
         }
-        Optional<LoadingTicket> ticket;
-        if (tickets.containsKey(chunkLoader.getUniqueId()) && tickets.get(chunkLoader.getUniqueId()).isPresent()) {
-            ticket = tickets.get(chunkLoader.getUniqueId());
-        } else {
-            ticket = ticketManager.get().createTicket(plugin, chunk.getWorld());
-            tickets.put(chunkLoader.getUniqueId(), ticket);
-        }
-        if (ticket.isPresent() && chunk != null) {
-            ticket.get().forceChunk(chunk.getPosition());
+        if (chunk != null) {
+            ticket.forceChunk(chunk.getPosition());
             if (plugin.getConfig().getCore().debug) {
                 plugin.getLogger().debug("LOAD");
-                plugin.getLogger().debug("CList: " + Arrays.toString(ticket.get().getChunkList().toArray()));
+                plugin.getLogger().debug("CList: " + Arrays.toString(ticket.getChunkList().toArray()));
             }
             return true;
         }
@@ -135,24 +138,21 @@ public class ChunkManager {
     /**
      * Unloads chunk using tickets.
      *
-     * @param chunkLoader
+     * @param ticket
      * @param chunk
      * @return
      */
-    public boolean unloadChunk(ChunkLoader chunkLoader, Chunk chunk) {
+    public boolean unloadChunk(LoadingTicket ticket, Chunk chunk) {
         if (!ticketManager.isPresent()) {
             return false;
         }
-        if (tickets.containsKey(chunkLoader.getUniqueId())) {
-            Optional<LoadingTicket> ticket = tickets.get(chunkLoader.getUniqueId());
-            if (ticket.isPresent() && chunk != null) {
-                ticket.get().unforceChunk(chunk.getPosition());
-                if (plugin.getConfig().getCore().debug) {
-                    plugin.getLogger().debug("UNLOAD");
-                    plugin.getLogger().debug("CList: " + Arrays.toString(ticket.get().getChunkList().toArray()));
-                }
-                return true;
+        if (chunk != null) {
+            ticket.unforceChunk(chunk.getPosition());
+            if (plugin.getConfig().getCore().debug) {
+                plugin.getLogger().debug("UNLOAD");
+                plugin.getLogger().debug("CList: " + Arrays.toString(ticket.getChunkList().toArray()));
             }
+            return true;
         }
         return false;
     }
@@ -160,7 +160,7 @@ public class ChunkManager {
     /*
         Gets all tickets controlled by this library.
      */
-    public Map<UUID, Optional<LoadingTicket>> getTickets() {
+    public Map<UUID, Optional<PlayerEntityLoadingTicket>> getTickets() {
         return tickets;
     }
 
