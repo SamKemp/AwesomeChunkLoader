@@ -14,7 +14,7 @@ import org.spongepowered.api.Sponge;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.ChunkTicketManager;
 import org.spongepowered.api.world.ChunkTicketManager.LoadingTicket;
-import org.spongepowered.api.world.ChunkTicketManager.PlayerEntityLoadingTicket;
+import org.spongepowered.api.world.ChunkTicketManager.PlayerLoadingTicket;
 import org.spongepowered.api.world.World;
 
 public class ChunkManager {
@@ -23,7 +23,7 @@ public class ChunkManager {
 
     private final Optional<ChunkTicketManager> ticketManager;
 
-    private final HashMap<UUID, Optional<PlayerEntityLoadingTicket>> tickets = new HashMap<>();
+    private final HashMap<UUID, Optional<PlayerLoadingTicket>> tickets = new HashMap<>();
 
     public ChunkManager(BetterChunkLoader plugin) {
         this.plugin = plugin;
@@ -71,7 +71,7 @@ public class ChunkManager {
         if (!mainChunk.isPresent()) {
             return false;
         }
-        Optional<PlayerEntityLoadingTicket> ticket = ticketManager.get().createPlayerEntityTicket(plugin, world.get(), chunkLoader.getOwner());
+        Optional<PlayerLoadingTicket> ticket = ticketManager.get().createPlayerTicket(plugin, world.get(), chunkLoader.getOwner());
         if (!ticket.isPresent()) {
             return false;
         }
@@ -92,8 +92,8 @@ public class ChunkManager {
         if (!mainChunk.isPresent()) {
             return false;
         }
-        Optional<PlayerEntityLoadingTicket> ticket = tickets.get(chunkLoader.getOwner());
-        if (!mainChunk.isPresent()) {
+        Optional<PlayerLoadingTicket> ticket = tickets.get(chunkLoader.getOwner());
+        if (!ticket.isPresent()) {
             return false;
         }
         List<Chunk> chunks = getChunks(chunkLoader.getRadius(), mainChunk.get());
@@ -160,7 +160,7 @@ public class ChunkManager {
     /*
         Gets all tickets controlled by this library.
      */
-    public Map<UUID, Optional<PlayerEntityLoadingTicket>> getTickets() {
+    public Map<UUID, Optional<PlayerLoadingTicket>> getTickets() {
         return tickets;
     }
 
