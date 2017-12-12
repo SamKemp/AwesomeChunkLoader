@@ -46,18 +46,6 @@ public class ChunkManager {
         ticketManager = Sponge.getServiceManager().provide(ChunkTicketManager.class);
         if (ticketManager.isPresent()) {
             ticketManager.get().registerCallback(plugin, new ChunkLoadingCallback(plugin));
-
-            //Unload all current forced chunks at startup this helps unload online loaders which may still be on due to a server crash.
-            Sponge.getServer().getWorlds().stream().map((world) -> ticketManager.get().getForcedChunks(world)).forEachOrdered((forcedChunks) -> {
-                forcedChunks.values().forEach((ticket) -> {
-                    if (plugin.getConfig().getCore().debug) {
-                        plugin.getLogger().info("Ticket Plugin" + ticket.getPlugin());
-                    }
-                    if (ticket.getPlugin().contains("betterchunkloader")) {
-                        ticket.release();
-                    }
-                });
-            });
         }
     }
 
