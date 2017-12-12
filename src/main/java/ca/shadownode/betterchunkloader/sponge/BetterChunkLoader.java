@@ -7,7 +7,6 @@ import ca.shadownode.betterchunkloader.sponge.datastore.DataStoreManager;
 import ca.shadownode.betterchunkloader.sponge.datastore.IDataStore;
 import ca.shadownode.betterchunkloader.sponge.events.PlayerListener;
 import ca.shadownode.betterchunkloader.sponge.events.WorldListener;
-import ca.shadownode.betterchunkloader.sponge.menu.MenuListener;
 import java.io.File;
 import ninja.leaping.configurate.objectmapping.GuiceObjectMapperFactory;
 import org.slf4j.Logger;
@@ -67,7 +66,6 @@ public class BetterChunkLoader {
 
                 new PlayerListener(this).register();
                 new WorldListener(this).register();
-                new MenuListener(this).register();
                 new CommandManager(this).register();
 
                 getLogger().info("Load complete.");
@@ -79,13 +77,14 @@ public class BetterChunkLoader {
 
     @Listener
     public void onServerStart(GameStartedServerEvent event) {
+        getLogger().info("Releasing all previous tickets.");
         chunkManager.getTicketManager().ifPresent((ticketManager) -> {
             Sponge.getServer().getWorlds().stream().map((world) -> ticketManager.getForcedChunks(world)).forEachOrdered((forcedChunks) -> {
                 forcedChunks.values().forEach((ticket) -> {
                     if (plugin.getConfig().getCore().debug) {
                         plugin.getLogger().info("Ticket Plugin" + ticket.getPlugin());
                     }
-                    if (ticket.getPlugin().contains("betterchunkloader")) {
+                    if (ticket.getPlugin().equalsIgnoreCase(pluginContainer.getId())) {
                         ticket.release();
                     }
                 });
@@ -96,7 +95,7 @@ public class BetterChunkLoader {
             chunkManager.loadChunkLoader(chunkLoader);
             return chunkLoader;
         }).map((_item) -> 1).reduce(count, Integer::sum);
-        getLogger().info("Activated " + count + " chunk loaders.");
+        getLogger().info("Activated " + count + " always-on chunk loaders.");
     }
 
     public static BetterChunkLoader getInstance() {

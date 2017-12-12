@@ -131,10 +131,10 @@ public final class ChunkLoader {
 
     public boolean isLoadable() {
         Optional<Player> player = Sponge.getServer().getPlayer(owner);
-        if(!isAlwaysOn && player.isPresent() && player.get().isOnline()) {
+        if (isAlwaysOn) {
             return !this.isExpired() && this.blockCheck();
-        }else{
-            return !this.isExpired() && this.blockCheck();
+        } else {
+            return !this.isExpired() && this.blockCheck() && player.isPresent();
         }
     }
 

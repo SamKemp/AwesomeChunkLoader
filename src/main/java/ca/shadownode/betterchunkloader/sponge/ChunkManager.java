@@ -14,7 +14,6 @@ import org.spongepowered.api.Sponge;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.ChunkTicketManager;
 import org.spongepowered.api.world.ChunkTicketManager.LoadingTicket;
-import org.spongepowered.api.world.ChunkTicketManager.PlayerLoadingTicket;
 import org.spongepowered.api.world.World;
 
 public class ChunkManager {
@@ -23,7 +22,7 @@ public class ChunkManager {
 
     private final Optional<ChunkTicketManager> ticketManager;
 
-    private final HashMap<UUID, Optional<PlayerLoadingTicket>> tickets = new HashMap<>();
+    private final HashMap<UUID, Optional<LoadingTicket>> tickets = new HashMap<>();
 
     public ChunkManager(BetterChunkLoader plugin) {
         this.plugin = plugin;
@@ -71,7 +70,7 @@ public class ChunkManager {
         if (!mainChunk.isPresent()) {
             return false;
         }
-        Optional<PlayerLoadingTicket> ticket = ticketManager.get().createPlayerTicket(plugin, world.get(), chunkLoader.getOwner());
+        Optional<LoadingTicket> ticket = ticketManager.get().createTicket(plugin, world.get());
         if (!ticket.isPresent()) {
             return false;
         }
@@ -79,7 +78,7 @@ public class ChunkManager {
         chunks.forEach((chunk) -> {
             loadChunk(ticket.get(), chunk);
         });
-        tickets.put(chunkLoader.getOwner(), ticket);
+        tickets.put(chunkLoader.getUniqueId(), ticket);
         return true;
     }
 
@@ -92,14 +91,12 @@ public class ChunkManager {
         if (!mainChunk.isPresent()) {
             return false;
         }
-        Optional<PlayerLoadingTicket> ticket = tickets.get(chunkLoader.getOwner());
+        Optional<LoadingTicket> ticket = tickets.get(chunkLoader.getUniqueId());
         if (!ticket.isPresent()) {
             return false;
         }
-        List<Chunk> chunks = getChunks(chunkLoader.getRadius(), mainChunk.get());
-        chunks.forEach((chunk) -> {
-            unloadChunk(ticket.get(), chunk);
-        });
+        ticket.get().release();
+        tickets.remove(chunkLoader.getUniqueId());
         return true;
     }
 
@@ -160,7 +157,7 @@ public class ChunkManager {
     /*
         Gets all tickets controlled by this library.
      */
-    public Map<UUID, Optional<PlayerLoadingTicket>> getTickets() {
+    public Map<UUID, Optional<LoadingTicket>> getTickets() {
         return tickets;
     }
 
