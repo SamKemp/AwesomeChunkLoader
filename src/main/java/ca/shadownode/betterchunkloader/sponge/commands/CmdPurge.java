@@ -24,6 +24,15 @@ public class CmdPurge implements CommandExecutor {
         List<ChunkLoader> chunkLoaders = plugin.getDataStore().getChunkLoaders();
         int count = 0;
         count = chunkLoaders.stream().filter((chunkLoader) -> (!chunkLoader.blockCheck())).map((chunkLoader) -> {
+
+            plugin.getDataStore().getPlayerData(chunkLoader.getOwner()).ifPresent((playerData) -> {
+                if(chunkLoader.isAlwaysOn()) {
+                    playerData.addAlwaysOnChunksAmount(chunkLoader.getChunks());
+                }else{
+                    playerData.addOnlineChunksAmount(chunkLoader.getChunks());
+                }
+            });
+
             plugin.getDataStore().removeChunkLoader(chunkLoader);
             return chunkLoader;
         }).map((_item) -> 1).reduce(count, Integer::sum);
