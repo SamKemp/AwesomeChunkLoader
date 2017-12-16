@@ -43,7 +43,7 @@ public class Menu {
                     .listener(ClickInventoryEvent.class, createMenuListener(chunkLoader))
                     .build(plugin);
             if (chunkLoader.getRadius() != -1) {
-                SlotPos slotPos = new SlotPos(0, 0);
+                SlotPos slotPos = SlotPos.of(0, 0);
                 HashMap<Key, Object> keys = new HashMap<>();
                 List<Text> lores = new ArrayList<>();
                 lores.add(Text.of("SlotPos: " + slotPos.getX() + "," + slotPos.getY()));
@@ -55,7 +55,7 @@ public class Menu {
             int pos = 2;
             for (int radius = 0; radius < 5;) {
                 Integer chunks = Double.valueOf(Math.pow((2 * radius) + 1, 2)).intValue();
-                SlotPos slotPos = new SlotPos(pos, 0);
+                SlotPos slotPos = SlotPos.of(pos, 0);
                 HashMap<Key, Object> keys = new HashMap<>();
                 List<Text> lores = new ArrayList<>();
                 lores.add(Text.of("SlotPos: " + slotPos.getX() + "," + slotPos.getY()));
@@ -76,7 +76,7 @@ public class Menu {
         keys.entrySet().forEach((entry) -> {
             itemStack.offer(entry.getKey(), entry.getValue());
         });
-        inventory.query(slotPos).set(itemStack);
+        inventory.query(slotPos).first().set(itemStack);
     }
 
     public Consumer<ClickInventoryEvent> createMenuListener(ChunkLoader chunkLoader) {
@@ -203,8 +203,8 @@ public class Menu {
             }
         };
     }
+    
     // All of this should be replaced when Sponge implements it's custom inventory data API. 
-
     public Optional<SlotPos> getSlotPos(Transaction<ItemStackSnapshot> transaction) {
         if (transaction.isValid()) {
             try { //SlotPos: X,Y
@@ -212,7 +212,7 @@ public class Menu {
                 for (Text text : lore) {
                     if (text.toPlain().contains("SlotPos:")) {
                         String[] values = text.toPlain().substring(9).split(",");
-                        return Optional.ofNullable(new SlotPos(Integer.parseInt(values[0]), Integer.parseInt(values[1])));
+                        return Optional.ofNullable(SlotPos.of(Integer.parseInt(values[0]), Integer.parseInt(values[1])));
                     }
                 }
             } catch (NumberFormatException ex) {
