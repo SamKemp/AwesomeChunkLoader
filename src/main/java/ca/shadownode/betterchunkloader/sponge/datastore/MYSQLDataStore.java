@@ -51,7 +51,7 @@ public final class MYSQLDataStore implements IDataStore {
                     + "creation BIGINT(20) NOT NULL, "
                     + "alwaysOn BOOLEAN NOT NULL, "
                     + "UNIQUE KEY uuid (uuid));");
-            connection.createStatement().executeUpdate("CREATE TABLE IF NOT EXISTS " + plugin.getConfig().getCore().dataStore.mysql.prefix + "playerdata ("
+            connection.createStatement().executeUpdate("CREATE TABLE IF NOT EXISTS bcl_playerdata ("
                     + "username VARCHAR(16) NOT NULL,"
                     + "uuid VARCHAR(36) NOT NULL, "
                     + "lastOnline BIGINT(20) NOT NULL, "
